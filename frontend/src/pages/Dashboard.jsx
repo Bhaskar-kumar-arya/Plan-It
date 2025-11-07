@@ -202,7 +202,7 @@ const Dashboard = () => {
                   if (warning) setWarning(''); // clear warning while typing
                 }}
                 placeholder="e.g., 'Bengaluru Tech Tour'"
-                className="flex-grow px-4 py-2 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                className="grow px-4 py-2 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
               />
               <button
                 type="submit"
