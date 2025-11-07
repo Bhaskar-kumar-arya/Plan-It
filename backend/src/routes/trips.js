@@ -4,6 +4,7 @@ import {
   createTrip,
   getTripData,
   addCollaborator,
+  deleteTrip,
 } from '../controllers/tripController.js';
 import { verifyToken, checkTripPermission } from '../middleware/authMiddleware.js';
 
@@ -27,5 +28,12 @@ router.route('/:tripId')
 // Requires 'owner' permission
 router.route('/:tripId/collaborators')
   .post(checkTripPermission('owner'), addCollaborator);
+
+// @route DELETE /api/trips/:tripId
+// Requires 'owner' permission
+router.route('/:tripId')
+  .get(checkTripPermission('viewer'), getTripData)
+  .delete(checkTripPermission('owner'), deleteTrip);
+
 
 export default router;

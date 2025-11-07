@@ -111,3 +111,27 @@ export const addCollaborator = asyncHandler(async (req, res) => {
 
   res.status(201).json(trip);
 });
+
+
+/**
+ * @desc    Delete a trip and all its related data
+ * @route   DELETE /api/trips/:tripId
+ * @access  Private (verifyToken + checkTripPermission('owner'))
+ */
+export const deleteTrip = asyncHandler(async (req, res) => {
+  // We get req.trip from the checkTripPermission('owner') middleware
+  const trip = req.trip;
+  const tripId = trip._id;
+
+  // Concurrently delete the trip and all its associated data
+  // This is much more efficient than doing it one by one.
+  await Promise.all([
+    trip.deleteOne(), // Deletes the trip document itself
+    Node.deleteMany({ tripId: tripId }),
+    Connection.deleteMany({ tripId: tripId }),
+    Activity.deleteMany({ tripId: tripId }),
+    // Add any other related models here (e.g., Comment.deleteMany, Task.deleteMany)
+  ]);
+
+  res.status(200).json({ message: 'Trip deleted successfully' });
+});
