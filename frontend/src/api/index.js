@@ -18,7 +18,20 @@ export const setAuthToken = (token) => {
 export const registerUser = (userData) => api.post('/auth/register', userData);
 export const loginUser = (userData) => api.post('/auth/login', userData);
 
-// --- Google Maps Endpoints (example from your docs) ---
+// --- Trip Endpoints ---
+export const getTrips = () => api.get('/trips');
+export const createTrip = (tripData) => api.post('/trips', tripData);
+export const getTripById = (tripId) => api.get(`/trips/${tripId}`);
+export const deleteTrip = (tripId) => api.delete(`/trips/${tripId}`); // <-- ADDED
+export const getTripBudget = (tripId) => api.get(`/trips/${tripId}/budget`);
+export const addCollaborator = (tripId, collaboratorData) =>
+  api.post(`/trips/${tripId}/collaborators`, collaboratorData);
+
+// --- Google Maps Endpoints ---
 export const searchGooglePlaces = (query) => api.post('/google/search', { query });
+export const searchNearbyPlaces = (placeId, query, radius) =>
+  api.post('/google/nearby', { placeId, query, radius });
+export const getGoogleDirections = (originPlaceId, destinationPlaceId) =>
+  api.post('/google/directions', { originPlaceId, destinationPlaceId });
 
 export default api;

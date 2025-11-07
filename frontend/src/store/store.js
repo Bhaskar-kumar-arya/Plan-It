@@ -3,14 +3,16 @@ import { setAuthToken } from '../api';
 
 export const useAuthStore = create((set) => ({
   // State
-  user: null,
+  user: null, // We'll load this from localStorage in init
   token: localStorage.getItem('token') || null,
   isAuth: !!localStorage.getItem('token'),
 
   // Actions
   login: (userData, token) => {
-    // 1. Set token in localStorage
+    // 1. Set items in localStorage
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData)); // <-- ADD THIS
+
     // 2. Set default auth header for axios
     setAuthToken(token);
     // 3. Update state
@@ -18,8 +20,10 @@ export const useAuthStore = create((set) => ({
   },
 
   logout: () => {
-    // 1. Remove token from localStorage
+    // 1. Remove items from localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // <-- ADD THIS
+
     // 2. Remove auth header
     setAuthToken(null);
     // 3. Update state
@@ -29,11 +33,19 @@ export const useAuthStore = create((set) => ({
   // Action to initialize state from localStorage on app load
   init: () => {
     const token = localStorage.getItem('token');
-    if (token) {
+    const user = localStorage.getItem('user'); // <-- GET USER
+
+    if (token && user) {
       setAuthToken(token);
-      // You might want to add a 'GET /api/auth/me' endpoint
-      // to fetch user data here and verify the token.
-      // For now, we just set the auth header.
+      // Re-hydrate the full auth state
+      set({
+        user: JSON.parse(user), // <-- SET USER
+        token: token,
+        isAuth: true,
+      });
+    } else {
+      // Ensure we're logged out if data is partial/missing
+      set({ user: null, token: null, isAuth: false });
     }
   },
 }));

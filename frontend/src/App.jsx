@@ -5,28 +5,13 @@ import { useAuthStore } from './store/store';
 // Import Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
-
-// A placeholder for your main app page
-const Dashboard = () => {
-  const logout = useAuthStore((state) => state.logout);
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold">Welcome to your Dashboard</h1>
-      <p className="text-foreground-secondary">You are logged in.</p>
-      <button
-        onClick={logout}
-        className="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:bg-accent-hover"
-      >
-        Logout
-      </button>
-    </div>
-  );
-};
+import Dashboard from './pages/Dashboard'; // Import the real dashboard
+import TripCanvasPage from './pages/TripCanvasPage'; // Import the new placeholder
 
 // A protected route component
 function ProtectedRoute({ children }) {
   const isAuth = useAuthStore((state) => state.isAuth);
-  return isAuth ? children : <Navigate to="/login" />;
+  return isAuth ? children : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -45,10 +30,25 @@ function App() {
           </ProtectedRoute>
         }
       />
-      {/* Add your /tripcanvas/:id route here later */}
-      
+      <Route
+        path="/tripcanvas/:tripId"
+        element={
+          <ProtectedRoute>
+            <TripCanvasPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Default redirect */}
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      {/* If logged in, /dashboard is the default, else /login */}
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute>
+            <Navigate to="/dashboard" />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
