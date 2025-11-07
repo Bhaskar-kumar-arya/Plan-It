@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\backend\src\sockets\socketHandler.js
+//================================================================================
+
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { JWT_SECRET } from '../config/index.js';
@@ -16,6 +20,12 @@ const logActivity = async (tripId, userId, action, details) => {
     console.error('Error logging activity:', error);
   }
 };
+
+// ✅ --- LIVE USER PRESENCE STORE ---
+// We use Maps for efficient add/delete operations
+// Format: Map<tripId, Map<userId, { username, sockets: Set<socketId> }>>
+const liveUsers = new Map();
+// ✅ --- END ---
 
 
 export const socketHandler = (io) => {
@@ -41,8 +51,10 @@ export const socketHandler = (io) => {
         return next(new Error('Authentication error: User not found.'));
       }
 
-      // Attach user ID to the socket object for use in all events
-      socket.userId = user._id;
+      // ✅ --- ATTACH USER INFO ---
+      // Attach user info to the socket for use in all events
+      socket.user = { _id: user._id, username: user.username };
+      // ✅ --- END ---
       next();
 
     } catch (err) {
@@ -55,12 +67,24 @@ export const socketHandler = (io) => {
   // 2. CONNECTION HANDLER
   // -----------------------------------------------------------------
   io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.id}, User ID: ${socket.userId}`);
+    console.log(`Socket connected: ${socket.id}, User ID: ${socket.user._id}`);
+
+    // --- Helper to broadcast the updated user list for a room ---
+    const broadcastLiveUsers = (tripId) => {
+      const room = liveUsers.get(tripId);
+      if (room) {
+        const usersList = Array.from(room.entries()).map(([userId, data]) => ({
+          _id: userId,
+          username: data.username,
+        }));
+        io.to(tripId).emit('liveUsersUpdate', usersList);
+      }
+    };
 
     // --- Join Trip Room ---
     socket.on('joinTrip', async ({ tripId }) => {
       try {
-        // 1. Validate the tripId format (prevents DB errors)
+        // 1. Validate the tripId format
         if (!mongoose.Types.ObjectId.isValid(tripId)) {
           socket.emit('error', { message: 'Invalid trip ID format' });
           return;
@@ -74,21 +98,43 @@ export const socketHandler = (io) => {
         }
 
         // 3. AUTHORIZATION check
-        const userId = socket.userId;
+        const userId = socket.user._id; // ✅ Get user from socket
         const isOwner = trip.owner.equals(userId);
         const isCollaborator = trip.collaborators.some(c => c.userId.equals(userId));
 
         if (!isOwner && !isCollaborator) {
-          // User is authenticated but NOT authorized for this trip
           socket.emit('error', { message: 'Forbidden: You do not have access to this trip' });
           return;
         }
 
         // 4. Join the room
         socket.join(tripId);
+        socket.currentTripId = tripId; // ✅ Store tripId on socket
         console.log(`User ${userId} joined trip room: ${tripId}`);
-        // Notify client they joined successfully
-        socket.emit('joinedTrip', tripId); 
+        socket.emit('joinedTrip', tripId);
+
+        // ✅ --- PRESENCE: ADD USER ---
+        // Get/create room
+        if (!liveUsers.has(tripId)) {
+          liveUsers.set(tripId, new Map());
+        }
+        const room = liveUsers.get(tripId);
+
+        // Get/create user data
+        if (!room.has(socket.user._id)) {
+          room.set(socket.user._id, {
+            username: socket.user.username,
+            sockets: new Set(),
+          });
+          // Broadcast "joined" toast to *others*
+          socket.to(tripId).emit('userJoined', socket.user);
+        }
+        // Add this socket to the user's socket Set
+        room.get(socket.user._id).sockets.add(socket.id);
+
+        // Broadcast the full updated list to *everyone*
+        broadcastLiveUsers(tripId);
+        // ✅ --- END PRESENCE ---
 
       } catch (error) {
         console.error('Socket Error (joinTrip):', error);
@@ -101,23 +147,18 @@ export const socketHandler = (io) => {
     socket.on('createNode', async (nodeData, callback) => {
       try {
         const newNode = await Node.create(nodeData);
-        // Broadcast to everyone in the room
         io.to(nodeData.tripId).emit('nodeCreated', newNode);
-        
-        logActivity(nodeData.tripId, socket.userId, 'CREATE_NODE', `Added node '${newNode.name}'`);
-
-        // Send the created node back to the person who emitted
+        logActivity(nodeData.tripId, socket.user._id, 'CREATE_NODE', `Added node '${newNode.name}'`); // ✅ Use socket.user
         if (callback) callback(newNode); 
       } catch (error) {
         console.error('Socket Error (createNode):', error);
-        if (callback) callback({ error: error.message }); // Send error back
+        if (callback) callback({ error: error.message });
       }
     });
 
     socket.on('moveNode', async ({ tripId, nodeId, newPosition }) => {
       try {
         await Node.findByIdAndUpdate(nodeId, { position: newPosition });
-        // Broadcast to others
         socket.to(tripId).emit('nodeMoved', { nodeId, newPosition });
       } catch (error) {
         console.error('Socket Error (moveNode):', error);
@@ -131,10 +172,8 @@ export const socketHandler = (io) => {
           { $set: newDetails },
           { new: true } 
         );
-        
-        // Broadcast to everyone
         io.to(tripId).emit('nodeUpdated', updatedNode);
-        logActivity(tripId, socket.userId, 'UPDATE_NODE', `Updated node '${updatedNode.name}'`);
+        logActivity(tripId, socket.user._id, 'UPDATE_NODE', `Updated node '${updatedNode.name}'`); // ✅ Use socket.user
       } catch (error) {
         console.error('Socket Error (updateNodeDetails):', error);
       }
@@ -143,18 +182,13 @@ export const socketHandler = (io) => {
     socket.on('deleteNode', async ({ tripId, nodeId }) => {
       try {
         const deletedNode = await Node.findByIdAndDelete(nodeId);
-        
-        // Delete all connections attached to this node
         await Connection.deleteMany({
           tripId,
           $or: [{ fromNodeId: nodeId }, { toNodeId: nodeId }]
         });
-        
-        // Broadcast to everyone
         io.to(tripId).emit('nodeDeleted', nodeId);
-        
         if (deletedNode) {
-          logActivity(tripId, socket.userId, 'DELETE_NODE', `Removed node '${deletedNode.name}'`);
+          logActivity(tripId, socket.user._id, 'DELETE_NODE', `Removed node '${deletedNode.name}'`); // ✅ Use socket.user
         }
       } catch (error) {
         console.error('Socket Error (deleteNode):', error);
@@ -164,46 +198,62 @@ export const socketHandler = (io) => {
     // --- Connection Events ---
     socket.on('createConnection', async (connectionData) => {
       try {
-        // ✅ The connectionData object now contains all fields,
-        // including sourceHandle and targetHandle (which can be null)
         const newConnection = await Connection.create(connectionData);
         io.to(connectionData.tripId).emit('connectionCreated', newConnection);
-      } catch (error)
- {
+      } catch (error) {
         console.error('Socket Error (createConnection):', error);
       }
     });
     
-    // ✅ --- ADDED THIS BLOCK ---
     socket.on('deleteConnection', async ({ tripId, connectionId }) => {
       try {
-        // 1. Delete the connection from the database
-            await Connection.findByIdAndDelete(connectionId);
-        
-        // 2. Broadcast to all clients in the room
+        await Connection.findByIdAndDelete(connectionId);
         io.to(tripId).emit('connectionDeleted', connectionId);
-        
-        // 3. Log activity
-        logActivity(tripId, socket.userId, 'DELETE_CONNECTION', `Removed a connection`);
-
+        logActivity(tripId, socket.user._id, 'DELETE_CONNECTION', `Removed a connection`); // ✅ Use socket.user
       } catch (error) {
         console.error('Socket Error (deleteConnection):', error);
       }
     });
-    // ✅ --- END OF ADDED BLOCK ---
     
     // --- Ephemeral Events (Cursor) ---
     socket.on('updateCursor', ({ tripId, position }) => {
       socket.to(tripId).emit('cursorMoved', { 
-        userId: socket.userId, // Trusted ID from our middleware
+        userId: socket.user._id, // ✅ Use socket.user
         position 
       });
     });
 
     // --- Disconnect ---
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.id}, User ID: ${socket.userId}`);
-      // You could broadcast a 'userLeft' event to rooms this socket was in
+      console.log(`Socket disconnected: ${socket.id}, User ID: ${socket.user?._id}`);
+      
+      // ✅ --- PRESENCE: REMOVE USER ---
+      const { user, currentTripId } = socket;
+      if (user && currentTripId && liveUsers.has(currentTripId)) {
+        const room = liveUsers.get(currentTripId);
+        const userData = room.get(user._id);
+
+        if (userData) {
+          // Remove this specific socket
+          userData.sockets.delete(socket.id);
+
+          // If user has no more open sockets, remove them fully
+          if (userData.sockets.size === 0) {
+            room.delete(user._id);
+            // Broadcast "left" toast to everyone
+            io.to(currentTripId).emit('userLeft', user);
+          }
+
+          // If room is now empty, clean it up from the main Map
+          if (room.size === 0) {
+            liveUsers.delete(currentTripId);
+          }
+
+          // Broadcast the full updated list
+          broadcastLiveUsers(currentTripId);
+        }
+      }
+      // ✅ --- END PRESENCE ---
     });
   });
 };

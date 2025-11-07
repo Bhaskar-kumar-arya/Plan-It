@@ -71,6 +71,7 @@ export const useTripStore = create((set, get) => ({
   activeTool: 'select',
   modalPayload: null,
   isShareModalOpen: false, // ✅ --- ADDED ---
+  liveUsers : [],
 
   // --- ACTIONS ---
   setSocket: (socket) => set({ socket }),
@@ -162,4 +163,5 @@ export const useTripStore = create((set, get) => ({
       edges: state.edges.filter((e) => e.id !== connectionId),
     }));
   },
-}));
+  setLiveUsers : (users) => set({liveUsers:users}) 
+}));    
