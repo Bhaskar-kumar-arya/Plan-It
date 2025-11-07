@@ -1,62 +1,51 @@
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { StickyNote } from 'lucide-react';
 
 /**
- * This is the custom-styled node for "Notes"
- */
+ * This is the custom-styled node for "Notes"
+ */
 const CustomNoteNode = ({ data, selected }) => {
-  // ✅ FIX 2: Check if data exists before reading from it
-  const name = data?.name || 'Loading...';
-  // ✅ FIX 3: Read from the nested 'details' object
-  const noteContent = data?.details?.address || 'Click to edit...';
+  const name = data?.name || 'Loading...';
+  const noteContent = data?.details?.address || 'Click to edit...';
 
-  return (
-    <>
-      {/* Handles for connections */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!w-2 !h-2 !bg-accent"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!w-2 !h-2 !bg-accent"
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-2 !h-2 !bg-accent"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2 !h-2 !bg-accent"
-      />
+  return (
+    <>
+      {/* ✅ UPDATED: Vertical Handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!w-2 !h-2 !bg-accent"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-2 !h-2 !bg-accent"
+      />
 
-      {/* Node Content */}
-      <div
-        className={`
-          w-48 bg-yellow-200/20 rounded-md shadow-lg
-          border-2
-          ${selected ? 'border-accent' : 'border-yellow-400/30'}
-        `}
-      >
-        <div className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <StickyNote className="h-4 w-4 text-yellow-400" />
-            <h3 className="font-bold text-sm text-foreground truncate">
-              {name}
-            </h3>
-          </div>
-          <p className="text-xs text-foreground-secondary break-words">
-            {noteContent}
-          </p>
-        </div>
-      </div>
-    </>
-  );
+      {/* Node Content */}
+      <div
+        className={`
+          w-48 bg-yellow-200/20 rounded-md shadow-lg
+          border-2
+          ${selected ? 'border-accent' : 'border-yellow-400/30'}
+        `}
+      >
+        <div className="p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <StickyNote className="h-4 w-4 text-yellow-400" />
+            <h3 className="font-bold text-sm text-foreground truncate">
+              {name}
+            </h3>
+          </div>
+          <p className="text-xs text-foreground-secondary break-words">
+            {noteContent}
+          </p>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default CustomNoteNode;
