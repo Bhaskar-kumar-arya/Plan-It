@@ -1,18 +1,15 @@
-
-
 import React from 'react';
 import { Handle, Position } from 'reactflow';
-import { MapPin } from 'lucide-react';
+import { StickyNote } from 'lucide-react';
 
 /**
- * This is the custom-styled node for the canvas,
- * matching the dark theme.
+ * This is the custom-styled node for "Notes"
  */
-const CustomNode = ({ data, selected }) => {
+const CustomNoteNode = ({ data, selected }) => {
   // ✅ FIX 2: Check if data exists before reading from it
   const name = data?.name || 'Loading...';
   // ✅ FIX 3: Read from the nested 'details' object
-  const address = data?.details?.address || 'Click to add details';
+  const noteContent = data?.details?.address || 'Click to edit...';
 
   return (
     <>
@@ -41,20 +38,20 @@ const CustomNode = ({ data, selected }) => {
       {/* Node Content */}
       <div
         className={`
-          w-48 bg-background-secondary rounded-md shadow-lg
+          w-48 bg-yellow-200/20 rounded-md shadow-lg
           border-2
-          ${selected ? 'border-accent' : 'border-border'}
+          ${selected ? 'border-accent' : 'border-yellow-400/30'}
         `}
       >
         <div className="p-3">
           <div className="flex items-center gap-2 mb-1">
-            <MapPin className="h-4 w-4 text-accent" />
+            <StickyNote className="h-4 w-4 text-yellow-400" />
             <h3 className="font-bold text-sm text-foreground truncate">
               {name}
             </h3>
           </div>
-          <p className="text-xs text-foreground-secondary truncate">
-            {address}
+          <p className="text-xs text-foreground-secondary break-words">
+            {noteContent}
           </p>
         </div>
       </div>
@@ -62,6 +59,4 @@ const CustomNode = ({ data, selected }) => {
   );
 };
 
-export default CustomNode;
-
-
+export default CustomNoteNode;

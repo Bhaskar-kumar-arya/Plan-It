@@ -1,5 +1,23 @@
+
 import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
+
+/**
+ * Helper to format a "flat" backend node into the
+ * structure React Flow expects.
+ */
+const formatNode = (backendNode) => {
+  // Destructure the known React Flow props
+  const { _id, position, type, ...data } = backendNode;
+  
+  // Return the correct structure
+  return {
+    id: _id, // React Flow needs 'id'
+    position,
+    type,
+    data: data, // All other properties (name, details, cost, status) go inside 'data'
+  };
+};
 
 /**
  * Zustand store for trip canvas
@@ -12,14 +30,18 @@ export const useTripStore = create((set, get) => ({
   edges: [],
   activities: [],
   selectedNodeId: null,
+  activeTool: 'select', 
 
   // --- ACTIONS ---
   setSocket: (socket) => set({ socket }),
 
+  setActiveTool: (tool) => set({ activeTool: tool }),
+
   setTripData: (data) => {
     set({
       trip: data.trip,
-      nodes: data.nodes.map((n) => ({ ...n, id: n._id })),
+      // ✅ FIX: Use the formatNode helper
+      nodes: data.nodes.map(formatNode),
       edges: data.connections.map((e) => ({ ...e, id: e._id })),
       activities: data.activities || [],
       selectedNodeId: null,
@@ -44,7 +66,8 @@ export const useTripStore = create((set, get) => ({
   // --- SOCKET LISTENER ACTIONS ---
   addNode: (newNode) => {
     set((state) => ({
-      nodes: [...state.nodes, { ...newNode, id: newNode._id }],
+      // ✅ FIX: Use the formatNode helper on the new node
+      nodes: [...state.nodes, formatNode(newNode)],
     }));
   },
 
@@ -57,9 +80,12 @@ export const useTripStore = create((set, get) => ({
   },
 
   updateNodeDetails: (updatedNode) => {
+    // updatedNode is the full backend object
+    // ✅ FIX: Use the formatNode helper to re-format it
+    const formatted = formatNode(updatedNode);
     set((state) => ({
       nodes: state.nodes.map((n) =>
-        n.id === updatedNode._id ? { ...updatedNode, id: updatedNode._id } : n
+        n.id === formatted.id ? formatted : n
       ),
     }));
   },
