@@ -17,6 +17,7 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.5",
     "reactflow": "^11.11.4",
+    "reselect": "^5.1.1",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.17",
     "zustand": "^5.0.8"
