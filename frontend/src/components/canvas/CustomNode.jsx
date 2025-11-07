@@ -16,31 +16,35 @@ const CustomNode = ({ data, selected }) => {
   return (
     <>
       {/* --- TARGETS (IN) --- */}
-      <Handle
+ <Handle
         type="target"
         position={Position.Top}
-        id="top" // <-- ADDED ID
-        className="!w-2 !h-2 !bg-[--border]"
+        id="top"
+        className="!w-4 !h-4 !bg-[--border]" // ✅ Size set to 4
+        style={{ top: '-8px' }} // ✅ Added negative offset
       />
       <Handle
         type="target"
         position={Position.Left}
-        id="left" // <-- ADDED ID
-        className="!w-2 !h-2 !bg-[--border]"
+        id="left"
+        className="!w-4 !h-4 !bg-[--border]" // ✅ Size set to 4
+        style={{ left: '-8px' }} // ✅ Added negative offset
       />
 
       {/* --- SOURCES (OUT) --- */}
       <Handle
         type="source"
         position={Position.Bottom}
-        id="bottom" // <-- ADDED ID
-        className="!w-2 !h-2 !bg-[--accent]"
+        id="bottom"
+        className="!w-4 !h-4 !bg-[--accent]" // ✅ Size set to 4
+        style={{ bottom: '-8px' }} // ✅ Added negative offset
       />
       <Handle
         type="source"
         position={Position.Right}
-        id="right" // <-- ADDED ID
-        className="!w-2 !h-2 !bg-[--accent]"
+        id="right"
+        className="!w-4 !h-4 !bg-[--accent]" // ✅ Size set to 4
+        style={{ right: '-8px' }} // ✅ Added negative offset
       />
 
       {/* Node Content */}
