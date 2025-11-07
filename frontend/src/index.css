@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+
+:root {
+  /* This is your "black greyish" theme palette. 
+    Update these values to change your site's theme.
+  */
+  --background: hsl(220, 10%, 10%); /* Very dark grey (almost black) */
+  --background-secondary: hsl(220, 10%, 15%); /* Dark grey for cards/panels */
+  --foreground: hsl(210, 10%, 95%); /* Off-white text */
+  --foreground-secondary: hsl(210, 10%, 65%); /* Lighter grey text */
+  --border: hsl(220, 10%, 25%); /* Border color */
+  --accent: hsl(200, 90%, 55%); /* Your "vibrant blue" accent */
+  --accent-hover: hsl(200, 90%, 60%); /* Accent hover */
+
+  /* Set the default background and text color for the entire app */
+  background-color: var(--background);
+  color: var(--foreground);
+  
+  /* Basic font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
