@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\frontend\src\store\tripStore.js
+//================================================================================
+
 // frontend/src/store/tripStore.js
 
 import { create } from 'zustand';
@@ -66,6 +70,7 @@ export const useTripStore = create((set, get) => ({
   selectedNodeId: null,
   activeTool: 'select',
   modalPayload: null,
+  isShareModalOpen: false, // ✅ --- ADDED ---
 
   // --- ACTIONS ---
   setSocket: (socket) => set({ socket }),
@@ -73,6 +78,11 @@ export const useTripStore = create((set, get) => ({
 
   openAddLocationModal: (payload) => set({ modalPayload: payload }),
   closeAddLocationModal: () => set({ modalPayload: null }),
+
+  // ✅ --- ADDED SHARE MODAL ACTIONS ---
+  openShareModal: () => set({ isShareModalOpen: true }),
+  closeShareModal: () => set({ isShareModalOpen: false }),
+  // ✅ --- END ---
 
   setTripData: (data) => {
     set({

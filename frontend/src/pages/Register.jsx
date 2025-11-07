@@ -4,6 +4,24 @@ import { useAuthStore } from '../store/store';
 import { registerUser } from '../api';
 import { UserPlus, Mail, Lock } from 'lucide-react';
 
+// Extracted as a separate component to prevent re-mounting
+const InputWithIcon = ({ icon: Icon, type, name, placeholder, value, onChange }) => (
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+      <Icon className="h-5 w-5 text-foreground-secondary" />
+    </span>
+    <input
+      type={type}
+      name={name}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      required
+      className="w-full pl-10 pr-3 py-2 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+    />
+  </div>
+);
+
 export default function Register() {
   const [formData, setFormData] = useState({
     username: '',
@@ -31,25 +49,6 @@ export default function Register() {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     }
   };
-
-  // Reusable input component for styling
-  const InputWithIcon = ({ icon: Icon, type, name, placeholder, value, onChange }) => (
-    <div className="relative">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-        <Icon className="h-5 w-5 text-foreground-secondary" />
-      </span>
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        required
-        className="w-full pl-10 pr-3 py-2 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-      />
-    </div>
-  );
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
@@ -88,7 +87,7 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-(--accent) text-white font-semibold rounded-md hover:bg-(--accent-hover) transition duration-200"
+            className="w-full py-2 px-4 bg-accent text-white font-semibold rounded-md hover:bg-accent/90 transition duration-200"
           >
             Sign Up
           </button>

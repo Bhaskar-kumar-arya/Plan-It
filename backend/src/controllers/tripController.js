@@ -1,4 +1,9 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\backend\src\controllers\tripController.js
+//================================================================================
+
 import asyncHandler from 'express-async-handler';
+import bcrypt from 'bcryptjs'; // ✅ --- ADDED BCRYPT ---
 import Trip from '../models/Trip.js';
 import Node from '../models/Node.js';
 import Connection from '../models/Connection.js';
@@ -6,132 +11,206 @@ import Activity from '../models/Activity.js';
 import User from '../models/User.js';
 
 /**
- * @desc Get all trips for the logged-in user
- * @route GET /api/trips
- * @access Private (verifyToken)
- */
+ * @desc Get all trips for the logged-in user
+ * @route GET /api/trips
+ * @access Private (verifyToken)
+ */
 export const getTrips = asyncHandler(async (req, res) => {
-  const trips = await Trip.find({
-    $or: [{ owner: req.user._id }, { 'collaborators.userId': req.user._id }],
-  }).sort({ updatedAt: -1 });
-  
-  res.json(trips);
+  const trips = await Trip.find({
+    $or: [{ owner: req.user._id }, { 'collaborators.userId': req.user._id }],
+  }).sort({ updatedAt: -1 });
+  
+  res.json(trips);
 });
 
 /**
- * @desc Create a new trip
- * @route POST /api/trips
- * @access Private (verifyToken)
- */
+ * @desc Create a new trip
+ * @route POST /api/trips
+ * @access Private (verifyToken)
+ */
 export const createTrip = asyncHandler(async (req, res) => {
-  const { name } = req.body;
-  if (!name) {
-    res.status(400);
-    throw new Error('Please provide a trip name');
-  }
+  const { name } = req.body;
+  if (!name) {
+    res.status(400);
+    throw new Error('Please provide a trip name');
+  }
 
-  const trip = await Trip.create({
-    name,
-    owner: req.user._id,
-  });
+  const trip = await Trip.create({
+    name,
+    owner: req.user._id,
+  });
 
-  res.status(201).json(trip);
+  res.status(201).json(trip);
 });
 
 /**
- * @desc Get full details for a single trip
- * @route GET /api/trips/:tripId
- * @access Private (verifyToken + checkTripPermission('viewer'))
- */
+ * @desc Get full details for a single trip
+ * @route GET /api/trips/:tripId
+ * @access Private (verifyToken + checkTripPermission('viewer'))
+ */
 export const getTripData = asyncHandler(async (req, res) => {
-  const { tripId } = req.params;
+  const { tripId } = req.params;
 
-  // The trip object is already attached by checkTripPermission middleware
-  const trip = req.trip;
+  // The trip object is already attached by checkTripPermission middleware
+  const trip = req.trip;
 
-  // Fetch all related data
-  const nodes = await Node.find({ tripId });
-  const connections = await Connection.find({ tripId });
-  const activities = await Activity.find({ tripId })
-    .sort({ timestamp: -1 })
-    .limit(50) // Limit to last 50 activities for performance
-    .populate('userId', 'username'); // Populate user info
+  // Fetch all related data
+  const nodes = await Node.find({ tripId });
+  const connections = await Connection.find({ tripId });
+   const activities = await Activity.find({ tripId })
+    .sort({ timestamp: -1 })
+    .limit(50) // Limit to last 50 activities for performance
+    .populate('userId', 'username'); // Populate user info
 
-  res.json({
-    trip,
-    nodes,
-    connections,
-    activities,
-  });
+  res.json({
+    trip,
+    nodes,
+    connections,
+    activities,
+  });
 });
 
 /**
- * @desc Add a collaborator to a trip
- * @route POST /api/trips/:tripId/collaborators
- * @access Private (verifyToken + checkTripPermission('owner'))
- */
+ * @desc Add a collaborator to a trip
+ * @route POST /api/trips/:tripId/collaborators
+ * @access Private (verifyToken + checkTripPermission('owner'))
+ */
 export const addCollaborator = asyncHandler(async (req, res) => {
-  const { email, role } = req.body;
-  const trip = req.trip; // Attached by middleware
+  const { email, role } = req.body;
+  const trip = req.trip; // Attached by middleware
 
-  if (!email || !role) {
-    res.status(400);
-    throw new Error('Please provide user email and role');
-  }
+  if (!email || !role) {
+    res.status(400);
+    throw new Error('Please provide user email and role');
+  }
 
-  // Find the user to add
-  const userToAdd = await User.findOne({ email });
-  if (!userToAdd) {
-    res.status(404);
-    throw new Error('User not found with that email');
-  }
+  // Find the user to add
+  const userToAdd = await User.findOne({ email });
+  if (!userToAdd) {
+    res.status(404);
+    throw new Error('User not found with that email');
+  }
 
-  // Check if user is the owner
-  if (trip.owner.equals(userToAdd._id)) {
-    res.status(400);
-    throw new Error('User is already the owner of this trip');
-  }
+  // Check if user is the owner
+  if (trip.owner.equals(userToAdd._id)) {
+    res.status(400);
+    throw new Error('User is already the owner of this trip');
+  }
 
-  // Check if user is already a collaborator
-  const isAlreadyCollaborator = trip.collaborators.some(
-    c => c.userId.equals(userToAdd._id)
-  );
-  if (isAlreadyCollaborator) {
-    res.status(400);
-    throw new Error('User is already a collaborator');
-  }
+  // Check if user is already a collaborator
+  const isAlreadyCollaborator = trip.collaborators.some(
+    c => c.userId.equals(userToAdd._id)
+  );
+  if (isAlreadyCollaborator) {
+    res.status(400);
+    throw new Error('User is already a collaborator');
+  }
 
-  // Add new collaborator
-  trip.collaborators.push({
-    userId: userToAdd._id,
-    role: role,
-  });
+  // Add new collaborator
+  trip.collaborators.push({
+    userId: userToAdd._id,
+    role: role,
+  });
 
-  await trip.save();
+  await trip.save();
 
-  res.status(201).json(trip);
+  res.status(201).json(trip);
 });
 
-
 /**
- * @desc    Delete a trip and all its related data
- * @route   DELETE /api/trips/:tripId
- * @access  Private (verifyToken + checkTripPermission('owner'))
- */
+ * @desc    Delete a trip and all its related data
+ * @route   DELETE /api/trips/:tripId
+ * @access  Private (verifyToken + checkTripPermission('owner'))
+ */
 export const deleteTrip = asyncHandler(async (req, res) => {
-  // We get req.trip from the checkTripPermission('owner') middleware
-  const trip = req.trip;
-  const tripId = trip._id;
+  // We get req.trip from the checkTripPermission('owner') middleware
+  const trip = req.trip;
+  const tripId = trip._id;
 
-  // Concurrently delete the trip and all its associated data
-  // This is much more efficient than doing it one by one.
-  await Promise.all([
-    trip.deleteOne(), // Deletes the trip document itself
-    Node.deleteMany({ tripId: tripId }),
-    Connection.deleteMany({ tripId: tripId }),
-    Activity.deleteMany({ tripId: tripId }),
-    // Add any other related models here (e.g., Comment.deleteMany, Task.deleteMany)
-  ]);
+  // Concurrently delete the trip and all its associated data
+  // This is much more efficient than doing it one by one.
+  await Promise.all([
+    trip.deleteOne(), // Deletes the trip document itself
+    Node.deleteMany({ tripId: tripId }),
+    Connection.deleteMany({ tripId: tripId }),
+    Activity.deleteMany({ tripId: tripId }),
+    // Add any other related models here (e.g., Comment.deleteMany, Task.deleteMany)
+  ]);
 
-  res.status(200).json({ message: 'Trip deleted successfully' });
+  res.status(200).json({ message: 'Trip deleted successfully' });
+});
+
+// ✅ --- ADDED SET SHARE SETTINGS ---
+/**
+ * @desc    Set or update the share password for a trip
+ * @route   PUT /api/trips/:tripId/share
+ * @access  Private (verifyToken + checkTripPermission('owner'))
+ */
+export const setShareSettings = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  const trip = req.trip; // Attached by 'owner' middleware
+
+  if (!password) {
+    res.status(400);
+    throw new Error('Please provide a password');
+  }
+
+  // Hash the password
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(password, salt);
+
+  // Update the trip
+  trip.sharePassword = passwordHash;
+  trip.shareEnabled = true;
+  await trip.save();
+
+  res.status(200).json({ message: 'Share settings updated successfully.' });
+});
+
+// ✅ --- ADDED JOIN TRIP ---
+/**
+ * @desc    Join a trip using a Trip ID and share password
+ * @route   POST /api/trips/join
+ * @access  Private (verifyToken)
+ */
+export const joinTrip = asyncHandler(async (req, res) => {
+  const { tripId, password } = req.body;
+  const userId = req.user._id;
+
+  if (!tripId || !password) {
+    res.status(400);
+    throw new Error('Please provide Trip ID and Share Code');
+  }
+
+  // 1. Find the trip
+  const trip = await Trip.findById(tripId);
+
+  if (!trip || !trip.shareEnabled || !trip.sharePassword) {
+    res.status(404);
+    throw new Error('Trip not found or sharing is not enabled');
+  }
+
+  // 2. Check the password
+  const isMatch = await bcrypt.compare(password, trip.sharePassword);
+  if (!isMatch) {
+    res.status(401);
+    throw new Error('Invalid Share Code');
+  }
+
+  // 3. Check if user is already owner or collaborator
+  const isOwner = trip.owner.equals(userId);
+  const isCollaborator = trip.collaborators.some(c => c.userId.equals(userId));
+
+  if (isOwner || isCollaborator) {
+    return res.status(200).json(trip); // Already a member, just return
+  }
+
+  // 4. Add user as an 'editor' collaborator (as requested)
+  trip.collaborators.push({
+    userId: userId,
+    role: 'editor',
+  });
+  await trip.save();
+
+  res.status(201).json(trip);
 });
