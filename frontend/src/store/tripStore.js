@@ -6,109 +6,110 @@
 
 import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
-import { createSelector } from 'reselect'; // ✅ Import reselect
+import { createSelector } from 'reselect';
 
-/**
- * Helper to format a "flat" backend node into the
- * structure React Flow expects.
- */
+// ... (formatNode, formatEdge, selectNodes, canvasNodesSelector, binNodesSelector helpers remain the same) ...
 const formatNode = (backendNode) => {
-  // ✅ All properties are now spread into 'data' except id, position, type
   const { _id, position, type, ...data } = backendNode;
   return {
     id: _id,
     position,
     type,
-    data, // This now includes 'name', 'status', 'displayType', 'details', etc.
+    data,
   };
 };
-
-/**
- * Helper to format a backend connection into the
- * structure React Flow expects.
- */
 const formatEdge = (backendConnection) => {
   return {
-    id: backendConnection._id, // React Flow needs 'id'
-    source: backendConnection.fromNodeId, // React Flow needs 'source'
-    target: backendConnection.toNodeId, // React Flow needs 'target'
-    // ✅ --- ADDED ---
+    id: backendConnection._id,
+    source: backendConnection.fromNodeId,
+    target: backendConnection.toNodeId,
     sourceHandle: backendConnection.sourceHandle,
     targetHandle: backendConnection.targetHandle,
-    // ✅ --- END ---
-    travelInfo: backendConnection.travelInfo, // Keep extra data
+    travelInfo: backendConnection.travelInfo,
   };
 };
-
-// --- ✅ NEW SELECTORS ---
-// Base selector for all nodes
 const selectNodes = (state) => state.nodes;
-
-// Memoized selector for nodes visible on the canvas
 export const canvasNodesSelector = createSelector(
   [selectNodes],
   (nodes) => nodes.filter((n) => n.data.displayType === 'canvas')
 );
-
-// Memoized selector for nodes visible in the Idea Bin
 export const binNodesSelector = createSelector(
   [selectNodes],
   (nodes) => nodes.filter((n) => n.data.displayType === 'bin')
 );
-// --- END OF NEW SELECTORS ---
 
-/**
- * Zustand store for trip canvas
- */
+
 export const useTripStore = create((set, get) => ({
-  // --- STATE ---
+  // ... (state remains the same) ...
   socket: null,
   trip: null,
-  nodes: [], // This will hold ALL nodes (bin and canvas)
+  nodes: [],
   edges: [],
   activities: [],
   selectedNodeId: null,
   activeTool: 'select',
   modalPayload: null,
-  isShareModalOpen: false, // ✅ --- ADDED ---
-  liveUsers : [],
+  isShareModalOpen: false,
+  liveUsers: [],
 
-  // --- ACTIONS ---
+  // ... (actions setSocket, setActiveTool, modals, setTripData remain the same) ...
   setSocket: (socket) => set({ socket }),
   setActiveTool: (tool) => set({ activeTool: tool }),
-
   openAddLocationModal: (payload) => set({ modalPayload: payload }),
   closeAddLocationModal: () => set({ modalPayload: null }),
-
-  // ✅ --- ADDED SHARE MODAL ACTIONS ---
   openShareModal: () => set({ isShareModalOpen: true }),
   closeShareModal: () => set({ isShareModalOpen: false }),
-  // ✅ --- END ---
-
   setTripData: (data) => {
     set({
       trip: data.trip,
-      nodes: data.nodes.map(formatNode), // Format all nodes
-      edges: data.connections.map(formatEdge), // Format all edges
+      nodes: data.nodes.map(formatNode),
+      edges: data.connections.map(formatEdge),
       activities: data.activities || [],
       selectedNodeId: null,
+      liveUsers: [],
     });
   },
 
-  setSelectedNodeId: (nodeId) => set({ selectedNodeId: nodeId }),
+  // ✅ --- UPDATED setSelectedNodeId ---
+  // This now handles updating the 'selected' prop on the nodes array,
+  // which tells React Flow to draw the blue border.
+  setSelectedNodeId: (nodeId) => {
+    set((state) => ({
+      selectedNodeId: nodeId,
+      nodes: state.nodes.map((n) => ({
+        ...n,
+        selected: n.id === nodeId,
+      })),
+    }));
+  },
 
   // --- REACT FLOW HANDLERS ---
-  onNodesChange: (changes) => {
-    const selectionChange = changes.find((c) => c.type === 'select');
-    if (selectionChange) {
-      set({
-        selectedNodeId: selectionChange.selected ? selectionChange.id : null,
-      });
-    }
 
-    set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes),
-    }));
+  // ✅ --- UPDATED onNodesChange ---
+  // This is the bug fix. We now apply changes *only* to the
+  // canvas nodes, then merge them back with the bin nodes.
+  onNodesChange: (changes) => {
+    set((state) => {
+      // Get the current state of bin and canvas nodes
+      const currentBinNodes = binNodesSelector(state);
+      const currentCanvasNodes = canvasNodesSelector(state);
+
+      // Apply the changes only to the canvas nodes
+      const newCanvasNodes = applyNodeChanges(changes, currentCanvasNodes);
+
+      // Check if a selection change occurred
+      const selectionChange = changes.find((c) => c.type === 'select');
+      const newSelectedId = selectionChange
+        ? (selectionChange.selected ? selectionChange.id : null)
+        : state.selectedNodeId; // Keep existing if no change
+
+      return {
+        // The new 'nodes' state is the *combination* of the
+        // updated canvas nodes and the untouched bin nodes.
+        nodes: [...newCanvasNodes, ...currentBinNodes],
+        selectedNodeId: newSelectedId,
+      };
+    });
   },
 
   onEdgesChange: (changes) => {
@@ -117,13 +118,13 @@ export const useTripStore = create((set, get) => ({
     }));
   },
 
-  // --- SOCKET LISTENER ACTIONS ---
+  // ... (Socket listener actions addNode, updateNodePos, etc. remain the same) ...
+  // ...
   addNode: (newNode) => {
     set((state) => ({
       nodes: [...state.nodes, formatNode(newNode)],
     }));
   },
-
   updateNodePos: ({ nodeId, newPosition }) => {
     set((state) => ({
       nodes: state.nodes.map((n) =>
@@ -131,7 +132,6 @@ export const useTripStore = create((set, get) => ({
       ),
     }));
   },
-
   updateNodeDetails: (updatedNode) => {
     const formatted = formatNode(updatedNode);
     set((state) => ({
@@ -140,7 +140,6 @@ export const useTripStore = create((set, get) => ({
       ),
     }));
   },
-
   removeNode: (nodeId) => {
     set((state) => ({
       nodes: state.nodes.filter((n) => n.id !== nodeId),
@@ -151,17 +150,15 @@ export const useTripStore = create((set, get) => ({
         state.selectedNodeId === nodeId ? null : state.selectedNodeId,
     }));
   },
-
   addEdge: (newEdge) => {
     set((state) => ({
-      edges: [...state.edges, formatEdge(newEdge)], // Use formatter
+      edges: [...state.edges, formatEdge(newEdge)],
     }));
   },
-
   removeEdge: (connectionId) => {
     set((state) => ({
       edges: state.edges.filter((e) => e.id !== connectionId),
     }));
   },
-  setLiveUsers : (users) => set({liveUsers:users}) 
-}));    
+  setLiveUsers: (users) => set({ liveUsers: users }),
+}));
