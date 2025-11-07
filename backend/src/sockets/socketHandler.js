@@ -168,6 +168,28 @@ export const socketHandler = (io) => {
         console.error('Socket Error (createConnection):', error);
       }
     });
+
+      socket.on('deleteConnection', async ({ tripId, connectionId }) => {
+      try {
+        // 1. Delete the connection from the database
+        const deletedConnection = await Connection.findByIdAndDelete(connectionId);
+
+        if (!deletedConnection) {
+          // Connection might have already been deleted, just ignore
+          return;
+        }
+
+        // 2. Broadcast the ID of the deleted connection to all clients
+        io.to(tripId).emit('connectionDeleted', connectionId);
+        
+        // 3. Log the activity
+        logActivity(tripId, socket.userId, 'DELETE_CONNECTION', 'Removed a connection');
+
+      } catch (error) {
+        console.error('Socket Error (deleteConnection):', error);
+        socket.emit('error', { message: 'Failed to delete connection' });
+      }
+    });
     
     // --- Ephemeral Events (Cursor) ---
     socket.on('updateCursor', ({ tripId, position }) => {

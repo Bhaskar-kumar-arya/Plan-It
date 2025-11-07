@@ -6,8 +6,6 @@ import ReactFlow, {
   Controls,
   MiniMap,
   useReactFlow,
-  // ✅ IMPORT MARKER TYPE
-  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -19,21 +17,6 @@ const nodeTypes = {
   location: CustomNode,
   note: CustomNoteNode,
 };
-
-// ✅ --- ADDED ---
-// Define default edge styles to match the theme
-const defaultEdgeOptions = {
-  style: {
-    stroke: 'hsl(200, 90%, 55%)', // --accent
-    strokeWidth: 2,
-  },
-  type: 'smoothstep', // A nice curvy line
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: 'hsl(200, 90%, 55%)', // --accent
-  },
-};
-// ✅ -------------
 
 // Custom shallow equality for arrays
 const shallowArrayEqual = (a, b) => {
@@ -170,37 +153,63 @@ const Canvas = () => {
       if (!socket) return;
       socket.emit('createConnection', {
         tripId,
-        source: connection.source,
-        target: connection.target,
-        // ✅ We will add travelInfo here later
+        // ✅ FIX: Rename 'source' to 'fromNodeId'
+        fromNodeId: connection.source,
+        // ✅ FIX: Rename 'target' to 'toNodeId'
+        toNodeId: connection.target,
       });
     },
     [socket, tripId]
   );
-
-  return (
-    <div className="w-full h-full bg-background">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDragStop={onNodeDragStop}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        // ✅ --- ADDED ---
-        defaultEdgeOptions={defaultEdgeOptions}
-        // ✅ -------------
-        fitView
-      >
-        <Controls />
-        <MiniMap nodeStrokeWidth={3} zoomable pannable />
-        <Background variant="dots" gap={16} size={1} />
-      </ReactFlow>
-    </div>
+const onNodesDelete = useCallback(
+    (nodesToDelete) => {
+      if (!socket) return;
+      // Loop and emit an event for each node
+      for (const node of nodesToDelete) {
+        socket.emit('deleteNode', {
+          tripId,
+          nodeId: node.id,
+        });
+      }
+    },
+    [socket, tripId]
   );
+
+  const onEdgesDelete = useCallback(
+    (edgesToDelete) => {
+      if (!socket) return;
+      // Loop and emit an event for each edge
+      for (const edge of edgesToDelete) {
+        socket.emit('deleteConnection', {
+          tripId,
+          connectionId: edge.id,
+        });
+      }
+    },
+    [socket, tripId]
+  );
+  return (
+      <div className="w-full h-full bg-background">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeDragStop={onNodeDragStop}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
+          onConnect={onConnect}
+          onNodesDelete={onNodesDelete} 
+          onEdgesDelete={onEdgesDelete} 
+          nodeTypes={nodeTypes}
+          fitView
+        >
+          <Controls />
+          <MiniMap nodeStrokeWidth={3} zoomable pannable />
+          <Background variant="dots" gap={16} size={1} />
+        </ReactFlow>
+      </div>
+    );
 };
 
 export default Canvas;

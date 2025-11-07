@@ -1,3 +1,4 @@
+// frontend/src/store/tripStore.js
 
 import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
@@ -7,15 +8,25 @@ import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
  * structure React Flow expects.
  */
 const formatNode = (backendNode) => {
-  // Destructure the known React Flow props
   const { _id, position, type, ...data } = backendNode;
-  
-  // Return the correct structure
   return {
-    id: _id, // React Flow needs 'id'
+    id: _id,           // React Flow needs 'id'
     position,
     type,
-    data: data, // All other properties (name, details, cost, status) go inside 'data'
+    data,              // Extra properties go inside 'data'
+  };
+};
+
+/**
+ * Helper to format a backend connection into the
+ * structure React Flow expects.
+ */
+const formatEdge = (backendConnection) => {
+  return {
+    id: backendConnection._id,              // React Flow needs 'id'
+    source: backendConnection.fromNodeId,   // React Flow needs 'source'
+    target: backendConnection.toNodeId,     // React Flow needs 'target'
+    travelInfo: backendConnection.travelInfo // Keep extra data
   };
 };
 
@@ -30,19 +41,17 @@ export const useTripStore = create((set, get) => ({
   edges: [],
   activities: [],
   selectedNodeId: null,
-  activeTool: 'select', 
+  activeTool: 'select',
 
   // --- ACTIONS ---
   setSocket: (socket) => set({ socket }),
-
   setActiveTool: (tool) => set({ activeTool: tool }),
 
   setTripData: (data) => {
     set({
       trip: data.trip,
-      // ✅ FIX: Use the formatNode helper
       nodes: data.nodes.map(formatNode),
-      edges: data.connections.map((e) => ({ ...e, id: e._id })),
+      edges: data.connections.map(formatEdge), // ✅ Format edges
       activities: data.activities || [],
       selectedNodeId: null,
     });
@@ -52,21 +61,23 @@ export const useTripStore = create((set, get) => ({
 
   // --- REACT FLOW HANDLERS ---
   onNodesChange: (changes) => {
+    // Filter out 'remove' changes; handle them manually
+    const nonRemoveChanges = changes.filter((c) => c.type !== 'remove');
     set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes),
+      nodes: applyNodeChanges(nonRemoveChanges, state.nodes),
     }));
   },
 
   onEdgesChange: (changes) => {
+    const nonRemoveChanges = changes.filter((c) => c.type !== 'remove');
     set((state) => ({
-      edges: applyEdgeChanges(changes, state.edges),
+      edges: applyEdgeChanges(nonRemoveChanges, state.edges),
     }));
   },
 
   // --- SOCKET LISTENER ACTIONS ---
   addNode: (newNode) => {
     set((state) => ({
-      // ✅ FIX: Use the formatNode helper on the new node
       nodes: [...state.nodes, formatNode(newNode)],
     }));
   },
@@ -80,8 +91,6 @@ export const useTripStore = create((set, get) => ({
   },
 
   updateNodeDetails: (updatedNode) => {
-    // updatedNode is the full backend object
-    // ✅ FIX: Use the formatNode helper to re-format it
     const formatted = formatNode(updatedNode);
     set((state) => ({
       nodes: state.nodes.map((n) =>
@@ -103,7 +112,13 @@ export const useTripStore = create((set, get) => ({
 
   addEdge: (newEdge) => {
     set((state) => ({
-      edges: [...state.edges, { ...newEdge, id: newEdge._id }],
+      edges: [...state.edges, formatEdge(newEdge)],
+    }));
+  },
+
+  removeEdge: (connectionId) => {
+    set((state) => ({
+      edges: state.edges.filter((e) => e.id !== connectionId),
     }));
   },
 }));

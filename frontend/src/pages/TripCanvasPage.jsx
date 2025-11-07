@@ -23,7 +23,7 @@ const useUpdateNodePosSelector = (state) => state.updateNodePos;
 const useUpdateNodeDetailsSelector = (state) => state.updateNodeDetails;
 const useRemoveNodeSelector = (state) => state.removeNode;
 const useAddEdgeSelector = (state) => state.addEdge;
-// ✅ ---------------------------------------
+const useRemoveEdgeSelector = (state) => state.removeEdge; // ✅ ADD THIS// ✅ ---------------------------------------
 
 const TripCanvasPage = () => {
   const { tripId } = useParams();
@@ -40,6 +40,7 @@ const TripCanvasPage = () => {
   const updateNodeDetails = useTripStore(useUpdateNodeDetailsSelector);
   const removeNode = useTripStore(useRemoveNodeSelector);
   const addEdge = useTripStore(useAddEdgeSelector);
+  const removeEdge = useTripStore(useRemoveEdgeSelector); // ✅ ADD THIS
   // ✅ ------------------------------
 
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +91,7 @@ const TripCanvasPage = () => {
     socket.on('nodeUpdated', updateNodeDetails);
     socket.on('nodeDeleted', removeNode);
     socket.on('connectionCreated', addEdge);
+    socket.on('connectionDeleted', removeEdge); // ✅ ADD THIS LISTENER
     // Add more listeners for comments, tasks, etc.
     // socket.on('commentCreated', addComment);
 
@@ -107,6 +109,7 @@ const TripCanvasPage = () => {
       socket.off('nodeUpdated');
       socket.off('nodeDeleted');
       socket.off('connectionCreated');
+      socket.off('connectionDeleted'); // ✅ ADD THIS CLEANUP
       socket.off('error');
     };
   }, [
@@ -117,6 +120,7 @@ const TripCanvasPage = () => {
     updateNodeDetails,
     removeNode,
     addEdge,
+    removeEdge, // ✅ ADD THIS DEPENDENCY
   ]);
 
   // --- RENDER STATES ---
