@@ -131,11 +131,15 @@ const Canvas = () => {
   const onConnect = useCallback(
     (connection) => {
       if (!socket) return;
+      // ✅ --- SEND FULL CONNECTION OBJECT ---
       socket.emit('createConnection', {
         tripId,
         fromNodeId: connection.source,
         toNodeId: connection.target,
+        sourceHandle: connection.sourceHandle, // <-- Send this
+        targetHandle: connection.targetHandle, // <-- Send this
       });
+      // ✅ --- END ---
     },
     [socket, tripId]
   );
@@ -166,16 +170,21 @@ const Canvas = () => {
     [socket, tripId]
   );
 
-  const onConnectStart = useCallback((_, { nodeId, handleType }) => {
-    connectingNodeId.current = { nodeId, handleType };
+  // ✅ --- CAPTURE handleId ---
+  const onConnectStart = useCallback((_, { nodeId, handleType, handleId }) => {
+    connectingNodeId.current = { nodeId, handleType, handleId }; // <-- Store handleId
   }, []);
 
   const onConnectEnd = useCallback(
     (event) => {
       if (!connectingNodeId.current) return;
 
-      const { nodeId: sourceNodeId, handleType: sourceHandleType } =
-        connectingNodeId.current;
+      // ✅ --- GET handleId FROM REF ---
+      const {
+        nodeId: sourceNodeId,
+        handleType: sourceHandleType,
+        handleId: sourceHandle, // <-- Get the stored handleId
+      } = connectingNodeId.current;
 
       connectingNodeId.current = null;
 
@@ -189,9 +198,11 @@ const Canvas = () => {
           y: event.clientY,
         });
 
+        // ✅ --- PASS sourceHandle TO MODAL ---
         openAddLocationModal({
           type: 'connect',
           sourceNodeId,
+          sourceHandle, // <-- Pass it
           position,
         });
       }

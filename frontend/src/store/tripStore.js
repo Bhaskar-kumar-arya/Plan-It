@@ -28,6 +28,10 @@ const formatEdge = (backendConnection) => {
     id: backendConnection._id, // React Flow needs 'id'
     source: backendConnection.fromNodeId, // React Flow needs 'source'
     target: backendConnection.toNodeId, // React Flow needs 'target'
+    // ✅ --- ADDED ---
+    sourceHandle: backendConnection.sourceHandle,
+    targetHandle: backendConnection.targetHandle,
+    // ✅ --- END ---
     travelInfo: backendConnection.travelInfo, // Keep extra data
   };
 };
@@ -74,7 +78,7 @@ export const useTripStore = create((set, get) => ({
     set({
       trip: data.trip,
       nodes: data.nodes.map(formatNode), // Format all nodes
-      edges: data.connections.map(formatEdge),
+      edges: data.connections.map(formatEdge), // Format all edges
       activities: data.activities || [],
       selectedNodeId: null,
     });
@@ -139,7 +143,7 @@ export const useTripStore = create((set, get) => ({
 
   addEdge: (newEdge) => {
     set((state) => ({
-      edges: [...state.edges, formatEdge(newEdge)],
+      edges: [...state.edges, formatEdge(newEdge)], // Use formatter
     }));
   },
 
