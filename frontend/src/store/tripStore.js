@@ -10,10 +10,10 @@ import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
 const formatNode = (backendNode) => {
   const { _id, position, type, ...data } = backendNode;
   return {
-    id: _id,           // React Flow needs 'id'
+    id: _id, // React Flow needs 'id'
     position,
     type,
-    data,              // Extra properties go inside 'data'
+    data, // Extra properties go inside 'data'
   };
 };
 
@@ -23,10 +23,10 @@ const formatNode = (backendNode) => {
  */
 const formatEdge = (backendConnection) => {
   return {
-    id: backendConnection._id,              // React Flow needs 'id'
-    source: backendConnection.fromNodeId,   // React Flow needs 'source'
-    target: backendConnection.toNodeId,     // React Flow needs 'target'
-    travelInfo: backendConnection.travelInfo // Keep extra data
+    id: backendConnection._id, // React Flow needs 'id'
+    source: backendConnection.fromNodeId, // React Flow needs 'source'
+    target: backendConnection.toNodeId, // React Flow needs 'target'
+    travelInfo: backendConnection.travelInfo, // Keep extra data
   };
 };
 
@@ -42,10 +42,15 @@ export const useTripStore = create((set, get) => ({
   activities: [],
   selectedNodeId: null,
   activeTool: 'select',
+  modalPayload: null, // ✅ ADDED: To control the 'Add Location' modal
 
   // --- ACTIONS ---
   setSocket: (socket) => set({ socket }),
   setActiveTool: (tool) => set({ activeTool: tool }),
+
+  // ✅ ADDED: Modal controls
+  openAddLocationModal: (payload) => set({ modalPayload: payload }),
+  closeAddLocationModal: () => set({ modalPayload: null }),
 
   setTripData: (data) => {
     set({
@@ -61,17 +66,26 @@ export const useTripStore = create((set, get) => ({
 
   // --- REACT FLOW HANDLERS ---
   onNodesChange: (changes) => {
-    // Filter out 'remove' changes; handle them manually
-    const nonRemoveChanges = changes.filter((c) => c.type !== 'remove');
+    // ✅ MODIFIED: Find selection changes
+    const selectionChange = changes.find((c) => c.type === 'select');
+    if (selectionChange) {
+      // Sync our store with React Flow's selection
+      set({
+        selectedNodeId: selectionChange.selected ? selectionChange.id : null,
+      });
+    }
+
+    // ✅ REMOVED: Filter for 'remove' type.
+    // We want React Flow to handle all local changes immediately.
     set((state) => ({
-      nodes: applyNodeChanges(nonRemoveChanges, state.nodes),
+      nodes: applyNodeChanges(changes, state.nodes),
     }));
   },
 
   onEdgesChange: (changes) => {
-    const nonRemoveChanges = changes.filter((c) => c.type !== 'remove');
+    // ✅ REMOVED: Filter for 'remove' type.
     set((state) => ({
-      edges: applyEdgeChanges(nonRemoveChanges, state.edges),
+      edges: applyEdgeChanges(changes, state.edges),
     }));
   },
 

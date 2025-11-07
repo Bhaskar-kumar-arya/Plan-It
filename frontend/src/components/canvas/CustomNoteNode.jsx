@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { StickyNote } from 'lucide-react';
@@ -12,16 +11,17 @@ const CustomNoteNode = ({ data, selected }) => {
 
   return (
     <>
-      {/* ✅ UPDATED: Vertical Handles */}
+      {/* ✅ CORRECTED: "Destination" handle (Top) */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-2 !h-2 !bg-accent"
+        className="!w-2 !h-2 !bg-[--border]" // Use !important and correct variable syntax
       />
+      {/* ✅ CORRECTED: "Source" handle (Bottom) */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-2 !h-2 !bg-accent"
+        className="!w-2 !h-2 !bg-[--accent]" // Use !important and correct variable syntax
       />
 
       {/* Node Content */}
@@ -29,7 +29,7 @@ const CustomNoteNode = ({ data, selected }) => {
         className={`
           w-48 bg-yellow-200/20 rounded-md shadow-lg
           border-2
-          ${selected ? 'border-accent' : 'border-yellow-400/30'}
+          ${selected ? 'border-[--accent]' : 'border-yellow-400/30'}
         `}
       >
         <div className="p-3">

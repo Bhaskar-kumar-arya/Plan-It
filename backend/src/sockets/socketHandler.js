@@ -22,8 +22,6 @@ export const socketHandler = (io) => {
 
   // -----------------------------------------------------------------
   // 1. AUTHENTICATION MIDDLEWARE
-  // This runs on every new connection.
-  // The client must send its token in socket.handshake.auth
   // -----------------------------------------------------------------
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
@@ -55,13 +53,11 @@ export const socketHandler = (io) => {
 
   // -----------------------------------------------------------------
   // 2. CONNECTION HANDLER
-  // This runs after the authentication middleware is successful.
   // -----------------------------------------------------------------
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}, User ID: ${socket.userId}`);
 
     // --- Join Trip Room ---
-    // The 'TODO' is now implemented here.
     socket.on('joinTrip', async ({ tripId }) => {
       try {
         // 1. Validate the tripId format (prevents DB errors)
@@ -102,22 +98,26 @@ export const socketHandler = (io) => {
 
 
     // --- Node Events ---
-    // Now uses socket.userId (trusted) instead of a payload property
-    socket.on('createNode', async (nodeData) => {
+    socket.on('createNode', async (nodeData, callback) => {
       try {
-        // We can trust socket.userId
         const newNode = await Node.create(nodeData);
+        // Broadcast to everyone in the room
         io.to(nodeData.tripId).emit('nodeCreated', newNode);
         
         logActivity(nodeData.tripId, socket.userId, 'CREATE_NODE', `Added node '${newNode.name}'`);
+
+        // Send the created node back to the person who emitted
+        if (callback) callback(newNode); 
       } catch (error) {
         console.error('Socket Error (createNode):', error);
+        if (callback) callback({ error: error.message }); // Send error back
       }
     });
 
     socket.on('moveNode', async ({ tripId, nodeId, newPosition }) => {
       try {
         await Node.findByIdAndUpdate(nodeId, { position: newPosition });
+        // Broadcast to others
         socket.to(tripId).emit('nodeMoved', { nodeId, newPosition });
       } catch (error) {
         console.error('Socket Error (moveNode):', error);
@@ -132,6 +132,7 @@ export const socketHandler = (io) => {
           { new: true } 
         );
         
+        // Broadcast to everyone
         io.to(tripId).emit('nodeUpdated', updatedNode);
         logActivity(tripId, socket.userId, 'UPDATE_NODE', `Updated node '${updatedNode.name}'`);
       } catch (error) {
@@ -143,11 +144,13 @@ export const socketHandler = (io) => {
       try {
         const deletedNode = await Node.findByIdAndDelete(nodeId);
         
+        // Delete all connections attached to this node
         await Connection.deleteMany({
           tripId,
           $or: [{ fromNodeId: nodeId }, { toNodeId: nodeId }]
         });
         
+        // Broadcast to everyone
         io.to(tripId).emit('nodeDeleted', nodeId);
         
         if (deletedNode) {
@@ -168,28 +171,24 @@ export const socketHandler = (io) => {
         console.error('Socket Error (createConnection):', error);
       }
     });
-
-      socket.on('deleteConnection', async ({ tripId, connectionId }) => {
-      try {
+    
+    // ✅ --- ADDED THIS BLOCK ---
+    socket.on('deleteConnection', async ({ tripId, connectionId }) => {
+      try {
         // 1. Delete the connection from the database
-        const deletedConnection = await Connection.findByIdAndDelete(connectionId);
+        await Connection.findByIdAndDelete(connectionId);
+        
+        // 2. Broadcast to all clients in the room
+        io.to(tripId).emit('connectionDeleted', connectionId);
+        
+        // 3. Log activity
+        logActivity(tripId, socket.userId, 'DELETE_CONNECTION', `Removed a connection`);
 
-        if (!deletedConnection) {
-          // Connection might have already been deleted, just ignore
-          return;
-        }
-
-        // 2. Broadcast the ID of the deleted connection to all clients
-        io.to(tripId).emit('connectionDeleted', connectionId);
-        
-        // 3. Log the activity
-        logActivity(tripId, socket.userId, 'DELETE_CONNECTION', 'Removed a connection');
-
-      } catch (error) {
-        console.error('Socket Error (deleteConnection):', error);
-        socket.emit('error', { message: 'Failed to delete connection' });
-      }
-    });
+      } catch (error) {
+        console.error('Socket Error (deleteConnection):', error);
+      }
+    });
+    // ✅ --- END OF ADDED BLOCK ---
     
     // --- Ephemeral Events (Cursor) ---
     socket.on('updateCursor', ({ tripId, position }) => {
