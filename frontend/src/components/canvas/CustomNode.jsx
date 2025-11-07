@@ -11,9 +11,7 @@ const CustomNode = ({ data, selected }) => {
   const address = data?.details?.address || 'Click to add details';
   const node_id = data?._id || name; // Use id for a unique image
 
-  const imageUrl = `https://source.unsplash.com/random/200x100/?${encodeURIComponent(
-    name
-  )}&sig=${node_id}`;
+  const imageUrl = "https://plus.unsplash.com/premium_photo-1675314800274-d84f6a902203?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687";
 
   return (
     <>
