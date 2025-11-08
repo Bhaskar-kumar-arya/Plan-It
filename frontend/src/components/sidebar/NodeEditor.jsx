@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\frontend\src\components\sidebar\NodeEditor.jsx
+//================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { useTripStore } from '../../store/tripStore';
 import {
@@ -5,7 +9,7 @@ import {
   MessageSquare,
   CheckSquare,
   Info,
-  SendToBack, // ✅ Import new icon
+  SendToBack,
 } from 'lucide-react';
 
 // --- SELECTORS ---
@@ -14,6 +18,23 @@ const nodesSelector = (state) => state.nodes;
 const socketSelector = (state) => state.socket;
 const tripSelector = (state) => state.trip;
 const setSelectedNodeIdSelector = (state) => state.setSelectedNodeId;
+
+// ✅ --- Helper to format date for <input type="datetime-local"> ---
+// It needs the format YYYY-MM-DDTHH:mm
+const formatDateTimeLocal = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    // Adjust for timezone offset
+    const correctedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    // Return in 'YYYY-MM-DDTHH:mm' format
+    return correctedDate.toISOString().slice(0, 16);
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return '';
+  }
+};
+// ✅ --- END HELPER ---
 
 /**
  * This component shows the details for the currently selected node.
@@ -60,6 +81,20 @@ const NodeEditor = () => {
     setLocalData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ✅ --- ADDED: Handler for timing inputs ---
+  const handleTimingChange = (e) => {
+    const { name, value } = e.target;
+    setLocalData((prev) => ({
+      ...prev,
+      timing: {
+        ...prev.timing,
+        // Convert local time string back to ISO string for DB
+        [name]: value ? new Date(value).toISOString() : null,
+      },
+    }));
+  };
+  // ✅ --- END HANDLER ---
+
   const handleUpdate = () => {
     if (JSON.stringify(localData) === JSON.stringify(nodeData)) return;
     if (!socket || !trip) return;
@@ -71,7 +106,7 @@ const NodeEditor = () => {
     });
   };
 
-  // ✅ Move Bin Item to Canvas
+  // Move Bin Item to Canvas
   const handleMoveToCanvas = () => {
     if (!socket || !trip) return;
 
@@ -173,6 +208,37 @@ const NodeEditor = () => {
               />
             </div>
 
+            {/* ✅ --- ADDED TIMING INPUTS --- */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                  Arrival
+                </label>
+                <input
+                  type="datetime-local"
+                  name="arrival"
+                  value={formatDateTimeLocal(localData.timing?.arrival)}
+                  onChange={handleTimingChange}
+                  onBlur={handleUpdate}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>  
+              <div>
+                <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                  Departure
+                </label>
+                <input
+                  type="datetime-local"
+                  name="departure"
+                  value={formatDateTimeLocal(localData.timing?.departure)}
+                  onChange={handleTimingChange}
+                  onBlur={handleUpdate}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+            </div>
+            {/* ✅ --- END TIMING INPUTS --- */}
+
             <div>
               <label className="block text-xs font-medium text-foreground-secondary mb-1">
                 Status
@@ -214,10 +280,10 @@ const NodeEditor = () => {
               Notes
             </label>
             <textarea
-              name="notes"
+              name="address" // This was 'notes' but the schema uses 'details.address' for note content
               rows="4"
-              value={localData.details?.notes || ''}
-              onChange={handleDetailsChange}
+              value={localData.details?.address || ''} // Changed from details.notes
+              onChange={handleDetailsChange} // Use details changer
               onBlur={handleUpdate}
               className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
             />

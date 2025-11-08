@@ -10,9 +10,9 @@ import { useTripStore } from '../../store/tripStore'; // ✅ Import store
 const ToolButton = ({ icon: Icon, label, isActive = false, onClick }) => ( // ✅ Add onClick
   <button
     onClick={onClick} // ✅ Add onClick
-    className={`p-3 rounded-md transition-colors ${
+    className={`p-3 rounded-md transition-colors cursor-pointer ${
       isActive
-        ? 'bg-accent text-white'
+        ? 'bg-[#25AFF4] text-white'
         : 'text-foreground-secondary hover:bg-background-secondary hover:text-foreground'
     }`}
     title={label}
