@@ -41,14 +41,14 @@ const CustomNode = ({ data, selected }) => {
         type="target"
         position={Position.Top}
         id="top"
-        className="!w-4 !h-4 !bg-[--border]"
+        className="!w-4 !h-4 !bg-[#374151]"
         style={{ top: '-8px' }}
       />
       <Handle
         type="target"
         position={Position.Left}
         id="left"
-        className="!w-4 !h-4 !bg-[--border]"
+        className="!w-4 !h-4 !bg-[#374151]"
         style={{ left: '-8px' }}
       />
 
@@ -57,14 +57,14 @@ const CustomNode = ({ data, selected }) => {
         type="source"
         position={Position.Bottom}
         id="bottom"
-        className="!w-4 !h-4 !bg-[--accent]"
+        className="!w-4 !h-4 !bg-[#1aa3ff]"
         style={{ bottom: '-8px' }}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className="!w-4 !h-4 !bg-[--accent]"
+        className="!w-4 !h-4 !bg-[#1aa3ff]"
         style={{ right: '-8px' }}
       />
 
