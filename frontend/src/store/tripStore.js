@@ -8,6 +8,8 @@ import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges } from 'reactflow';
 import { createSelector } from 'reselect';
 
+import { getTasksForNode, getCommentsForNode } from '../api';
+
 // ... (formatNode, formatEdge, selectNodes, canvasNodesSelector, binNodesSelector helpers remain the same) ...
 const formatNode = (backendNode) => {
   const { _id, position, type, ...data } = backendNode;
@@ -51,6 +53,8 @@ export const useTripStore = create((set, get) => ({
   modalPayload: null,
   isShareModalOpen: false,
   liveUsers: [],
+  selectedNodeTasks: [],
+  selectedNodeComments: [],
 
   // ... (actions setSocket, setActiveTool, modals, setTripData remain the same) ...
   setSocket: (socket) => set({ socket }),
@@ -73,44 +77,123 @@ export const useTripStore = create((set, get) => ({
   // ✅ --- UPDATED setSelectedNodeId ---
   // This now handles updating the 'selected' prop on the nodes array,
   // which tells React Flow to draw the blue border.
-  setSelectedNodeId: (nodeId) => {
-    set((state) => ({
-      selectedNodeId: nodeId,
-      nodes: state.nodes.map((n) => ({
-        ...n,
-        selected: n.id === nodeId,
-      })),
-    }));
-  },
+    setSelectedNodeId: (nodeId) => {
+    // 1. Update node selection in React Flow
+    set((state) => ({
+      selectedNodeId: nodeId,
+      nodes: state.nodes.map((n) => ({
+        ...n,
+        selected: n.id === nodeId,
+      })),
+    }));
+
+    // 2. Fetch data or clear data
+    if (nodeId) {
+      // Trigger the fetch
+      get().fetchTasksAndComments(nodeId);
+    } else {
+      // Clear data on deselect
+      set({ selectedNodeTasks: [], selectedNodeComments: [] });
+    }
+    },
+
+    fetchTasksAndComments: async (nodeId) => {
+    try {
+      // Clear old data first to show loading state
+      set({ selectedNodeTasks: [], selectedNodeComments: [] });
+      
+      const [tasksRes, commentsRes] = await Promise.all([
+        getTasksForNode(nodeId),
+        getCommentsForNode(nodeId),
+      ]);
+
+      // Check if the user hasn't clicked another node while we were fetching
+      if (get().selectedNodeId === nodeId) {
+        set({
+          selectedNodeTasks: tasksRes.data,
+          selectedNodeComments: commentsRes.data,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch tasks/comments', error);
+    }
+  },
+
+  // ... (onNodesChange, onEdgesChange, etc.) ...
+
+  // ✅ --- NEW ACTIONS: Socket Listeners ---
+  // These are called by the listeners in TripCanvasPage.jsx
+  addTask: (task) => {
+    // Only add if it belongs to the currently selected node
+    if (get().selectedNodeId === task.nodeId) {
+      set((state) => ({
+        selectedNodeTasks: [...state.selectedNodeTasks, task],
+      }));
+    }
+  },
+  updateTask: (updatedTask) => {
+    set((state) => ({
+      selectedNodeTasks: state.selectedNodeTasks.map((t) =>
+        t._id === updatedTask._id ? updatedTask : t
+      ),
+    }));
+  },
+  removeTask: ({ taskId }) => {
+    set((state) => ({
+      selectedNodeTasks: state.selectedNodeTasks.filter((t) => t._id !== taskId),
+    }));
+  },
+  addComment: (comment) => {
+    // Only add if it belongs to the currently selected node
+    if (get().selectedNodeId === comment.nodeId) {
+      set((state) => ({
+        selectedNodeComments: [...state.selectedNodeComments, comment],
+      }));
+    }
+  },
 
   // --- REACT FLOW HANDLERS ---
 
   // ✅ --- UPDATED onNodesChange ---
   // This is the bug fix. We now apply changes *only* to the
   // canvas nodes, then merge them back with the bin nodes.
-  onNodesChange: (changes) => {
-    set((state) => {
-      // Get the current state of bin and canvas nodes
-      const currentBinNodes = binNodesSelector(state);
-      const currentCanvasNodes = canvasNodesSelector(state);
+  onNodesChange: (changes) => {
+    // Get the *current* selected ID *before* changes
+    const oldSelectedId = get().selectedNodeId;
 
-      // Apply the changes only to the canvas nodes
-      const newCanvasNodes = applyNodeChanges(changes, currentCanvasNodes);
+    // Apply changes and update state
+    set((state) => {
+      const currentBinNodes = binNodesSelector(state);
+      const currentCanvasNodes = canvasNodesSelector(state);
+      const newCanvasNodes = applyNodeChanges(changes, currentCanvasNodes);
 
-      // Check if a selection change occurred
-      const selectionChange = changes.find((c) => c.type === 'select');
-      const newSelectedId = selectionChange
-        ? (selectionChange.selected ? selectionChange.id : null)
-        : state.selectedNodeId; // Keep existing if no change
+      const selectionChange = changes.find((c) => c.type === 'select');
+      
+      // We check for `selectionChange` to correctly determine the new ID
+      // If there's no selection change, we keep the existing `state.selectedNodeId`
+      const newSelectedId = selectionChange
+        ? (selectionChange.selected ? selectionChange.id : null)
+        : state.selectedNodeId;
 
-      return {
-        // The new 'nodes' state is the *combination* of the
-        // updated canvas nodes and the untouched bin nodes.
-        nodes: [...newCanvasNodes, ...currentBinNodes],
-        selectedNodeId: newSelectedId,
-      };
-    });
-  },
+      return {
+        nodes: [...newCanvasNodes, ...currentBinNodes],
+        selectedNodeId: newSelectedId,
+      };
+    });
+    
+    // Get the *new* selected ID *after* state has been set
+    const newSelectedId = get().selectedNodeId;
+    
+    // Now, if the ID has changed, trigger the fetch
+    if (newSelectedId !== oldSelectedId) {
+      if (newSelectedId) {
+        get().fetchTasksAndComments(newSelectedId);
+      } else {
+        // Clear data on deselect
+        set({ selectedNodeTasks: [], selectedNodeComments: [] });
+      }
+    }
+  },
 
   onEdgesChange: (changes) => {
     set((state) => ({

@@ -10,6 +10,8 @@ import Trip from '../models/Trip.js';
 import Node from '../models/Node.js';
 import Connection from '../models/Connection.js';
 import Activity from '../models/Activity.js';
+import Task from '../models/Task.js'; // ✅ --- ADD THIS ---
+import Comment from '../models/Comment.js'; // ✅ --- ADD THIS ---
 
 // --- Helper function to log activities ---
 const logActivity = async (tripId, userId, action, details) => {
@@ -141,6 +143,70 @@ export const socketHandler = (io) => {
         socket.emit('error', { message: 'Server error while joining trip' });
       }
     });
+
+    socket.on('createTask', async ({ tripId, nodeId, text }, callback) => {
+      try {
+        const task = await Task.create({
+          tripId,
+          nodeId,
+          text,
+          assignedTo: socket.user._id, // Assign to creator by default
+        });
+        io.to(tripId).emit('taskCreated', task);
+        if (callback) callback(task);
+      } catch (error) {
+        console.error('Socket Error (createTask):', error);
+        if (callback) callback({ error: error.message });
+      }
+    });
+
+    socket.on('updateTask', async ({ tripId, taskId, updates }) => {
+      try {
+        const updatedTask = await Task.findByIdAndUpdate(
+          taskId,
+          { $set: updates }, // e.g., { isCompleted: true } or { text: "new text" }
+          { new: true }
+        );
+        io.to(tripId).emit('taskUpdated', updatedTask);
+      } catch (error) {
+        console.error('Socket Error (updateTask):', error);
+      }
+    });
+
+    socket.on('deleteTask', async ({ tripId, taskId }) => {
+      try {
+        await Task.findByIdAndDelete(taskId);
+        io.to(tripId).emit('taskDeleted', { taskId });
+      } catch (error) {
+        console.error('Socket Error (deleteTask):', error);
+      }
+    });
+
+    // ✅ --- COMMENT EVENTS ---
+    socket.on('createComment', async ({ tripId, nodeId, text }, callback) => {
+      try {
+        let newComment = await Comment.create({
+          tripId,
+          nodeId,
+          text,
+          userId: socket.user._id,
+        });
+        // We must populate the user info before broadcasting
+        newComment = await newComment.populate('userId', 'username');
+
+        io.to(tripId).emit('commentCreated', newComment);
+        if (callback) callback(newComment);
+      } catch (error) {
+        console.error('Socket Error (createComment):', error);
+        if (callback) callback({ error: error.message });
+      }
+    });
+
+    socket.on('deleteComment', async ({ tripId, commentId }) => {
+        // Add logic here if you want to allow comment deletion
+        // For simplicity, we'll leave this empty, but the structure is here.
+        // You would check if socket.user._id matches the comment.userId
+    });
 
 
     // --- Node Events ---

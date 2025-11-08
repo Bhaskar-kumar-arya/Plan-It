@@ -11,6 +11,8 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
 import googleRoutes from './routes/google.js'; // 1. Import new routes
+import taskRoutes from './routes/taskRoutes.js'; // ✅ --- ADD THIS ---
+import commentRoutes from './routes/commentRoutes.js'; // ✅ --- ADD THIS ---
 
 // Middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
@@ -42,6 +44,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/google', googleRoutes); // 2. Add new routes to Express
+app.use('/api/tasks', taskRoutes); // ✅ --- ADD THIS ---
+app.use('/api/comments', commentRoutes); // ✅ --- ADD THIS ---
 
 // --- Handle Socket.io Connections ---
 socketHandler(io);

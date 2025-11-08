@@ -46,4 +46,7 @@ export const searchNearbyPlaces = (placeId, query, radius) =>
 export const getGoogleDirections = (originPlaceId, destinationPlaceId) =>
   api.post('/google/directions', { originPlaceId, destinationPlaceId });
 
+export const getTasksForNode = (nodeId) => api.get(`/tasks/node/${nodeId}`);
+export const getCommentsForNode = (nodeId) => api.get(`/comments/node/${nodeId}`);
+
 export default api;

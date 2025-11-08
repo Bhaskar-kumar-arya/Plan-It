@@ -32,6 +32,10 @@ const useRemoveNodeSelector = (state) => state.removeNode;
 const useAddEdgeSelector = (state) => state.addEdge;
 const useRemoveEdgeSelector = (state) => state.removeEdge;
 const useSetLiveUsersSelector = (state) => state.setLiveUsers; // ✅ --- ADDED ---
+const useAddTaskSelector = (state) => state.addTask;
+const useUpdateTaskSelector = (state) => state.updateTask;
+const useRemoveTaskSelector = (state) => state.removeTask;
+const useAddCommentSelector = (state) => state.addComment;
 const useUserSelector = (state) => state.user; // ✅ --- ADDED ---
 
 const TripCanvasPage = () => {
@@ -52,6 +56,10 @@ const TripCanvasPage = () => {
   const addEdge = useTripStore(useAddEdgeSelector);
   const removeEdge = useTripStore(useRemoveEdgeSelector);
   const setLiveUsers = useTripStore(useSetLiveUsersSelector); // ✅ --- ADDED ---
+  const addTask = useTripStore(useAddTaskSelector);
+  const updateTask = useTripStore(useUpdateTaskSelector);
+  const removeTask = useTripStore(useRemoveTaskSelector);
+  const addComment = useTripStore(useAddCommentSelector);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -101,6 +109,10 @@ const TripCanvasPage = () => {
     socket.on('nodeDeleted', removeNode);
     socket.on('connectionCreated', addEdge);
     socket.on('connectionDeleted', removeEdge);
+    socket.on('taskCreated', addTask);
+    socket.on('taskUpdated', updateTask);
+    socket.on('taskDeleted', removeTask);
+    socket.on('commentCreated', addComment);
 
     // ✅ --- ADDED PRESENCE LISTENERS ---
     socket.on('liveUsersUpdate', setLiveUsers);
@@ -138,6 +150,10 @@ const TripCanvasPage = () => {
       socket.off('liveUsersUpdate');
       socket.off('userJoined');
       socket.off('userLeft');
+      socket.off('taskCreated');
+      socket.off('taskUpdated');
+      socket.off('taskDeleted');
+      socket.off('commentCreated');
     };
   }, [
     socket,
@@ -150,6 +166,10 @@ const TripCanvasPage = () => {
     removeEdge,
     setLiveUsers, // ✅ --- ADDED ---
     currentUser, // ✅ --- ADDED ---
+    addTask,
+    updateTask,
+    removeTask,
+    addComment,
   ]);
 
   // --- RENDER STATES ---

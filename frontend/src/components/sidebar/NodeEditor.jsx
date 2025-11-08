@@ -12,6 +12,9 @@ import {
   SendToBack,
 } from 'lucide-react';
 
+import TaskList from './TaskList';
+import CommentList from './CommentList';
+
 // --- SELECTORS ---
 const selectedNodeIdSelector = (state) => state.selectedNodeId;
 const nodesSelector = (state) => state.nodes;
@@ -50,9 +53,15 @@ const NodeEditor = () => {
 
   const [localData, setLocalData] = useState(nodeData || {});
 
+  const [activeTab, setActiveTab] = useState('details');
+
   useEffect(() => {
     setLocalData(nodeData || {});
   }, [nodeData]);
+
+  useEffect(() => {
+    setActiveTab('details');
+  }, [selectedNodeId]);
 
   if (!nodeData) {
     return (
@@ -140,125 +149,166 @@ const NodeEditor = () => {
 
       {/* Tabs */}
       <div className="flex border-b border-border">
-        <button className="flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium text-accent border-b-2 border-accent">
+        <button
+          onClick={() => setActiveTab('details')}
+          className={`flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium cursor-pointer ${
+            activeTab === 'details'
+              ? 'text-accent border-b-2 border-accent'
+              : 'text-foreground-secondary hover:text-foreground'
+          }`}
+        >
           <Info className="h-4 w-4" />
           <span>Details</span>
         </button>
-        <button className="flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium text-foreground-secondary hover:text-foreground">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium cursor-pointer ${
+            activeTab === 'tasks'
+              ? 'text-accent border-b-2 border-accent'
+              : 'text-foreground-secondary hover:text-foreground'
+          }`}
+        >
           <CheckSquare className="h-4 w-4" />
           <span>Tasks</span>
         </button>
-        <button className="flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium text-foreground-secondary hover:text-foreground">
+        <button
+          onClick={() => setActiveTab('comments')}
+          className={`flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium cursor-pointer ${
+            activeTab === 'comments'
+              ? 'text-accent border-b-2 border-accent'
+              : 'text-foreground-secondary hover:text-foreground'
+          }`}
+        >
           <MessageSquare className="h-4 w-4" />
           <span>Comments</span>
         </button>
       </div>
 
       {/* Details Form */}
-      <div className="p-4 space-y-4">
-        {isBinItem && (
-          <button
-            onClick={handleMoveToCanvas}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-accent rounded-md border border-accent/30 hover:bg-accent/10 transition-colors"
-          >
-            <SendToBack className="h-4 w-4" />
-            Move to Canvas
-          </button>
-        )}
+      {activeTab === 'details' && (
+        <div className="p-4 space-y-4">
+          {isBinItem && (
+            <button
+              onClick={handleMoveToCanvas}
+              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-accent rounded-md border border-accent/30 hover:bg-accent/10 transition-colors"
+            >
+              <SendToBack className="h-4 w-4" />
+              Move to Canvas
+            </button>
+          )}
 
-        <div>
-          <label className="block text-xs font-medium text-foreground-secondary mb-1">
-            {isNote ? 'Title' : 'Name'}
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={localData.name || ''}
-            onChange={handleChange}
-            onBlur={handleUpdate}
-            className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </div>
+          <div>
+            <label className="block text-xs font-medium text-foreground-secondary mb-1">
+              {isNote ? 'Title' : 'Name'}
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={localData.name || ''}
+              onChange={handleChange}
+              onBlur={handleUpdate}
+              className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
 
-        {/* Location-only fields */}
-        {!isNote && (
-          <>
+          {/* Location-only fields */}
+          {!isNote && (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={localData.details?.address || ''}
+                  onChange={handleDetailsChange}
+                  onBlur={handleUpdate}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                    Arrival
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="arrival"
+                    value={formatDateTimeLocal(localData.timing?.arrival)}
+                    onChange={handleTimingChange}
+                    onBlur={handleUpdate}
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                    Departure
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="departure"
+                    value={formatDateTimeLocal(localData.timing?.departure)}
+                    onChange={handleTimingChange}
+                    onBlur={handleUpdate}
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-foreground-secondary mb-1">
+                  Estimated Cost (RS)
+                </label>
+                <input
+                  type="number"
+                  name="cost"
+                  value={localData.cost || 0}
+                  onChange={handleChange}
+                  onBlur={handleUpdate}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Note-only fields */}
+          {isNote && (
             <div>
               <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                Address
+                Notes
               </label>
-              <input
-                type="text"
+              <textarea
                 name="address"
+                rows="4"
                 value={localData.details?.address || ''}
                 onChange={handleDetailsChange}
                 onBlur={handleUpdate}
                 className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
+          )}
+        </div>
+      )}
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                  Arrival
-                </label>
-                <input
-                  type="datetime-local"
-                  name="arrival"
-                  value={formatDateTimeLocal(localData.timing?.arrival)}
-                  onChange={handleTimingChange}
-                  onBlur={handleUpdate}
-                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                  Departure
-                </label>
-                <input
-                  type="datetime-local"
-                  name="departure"
-                  value={formatDateTimeLocal(localData.timing?.departure)}
-                  onChange={handleTimingChange}
-                  onBlur={handleUpdate}
-                  className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </div>
-            </div>
+      {/* Tasks Tab */}
+      {activeTab === 'tasks' && (
+        <TaskList
+          tripId={trip._id}
+          nodeId={selectedNodeId}
+          socket={socket}
+        />
+      )}
 
-            <div>
-              <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                Estimated Cost (RS)
-              </label>
-              <input
-                type="number"
-                name="cost"
-                value={localData.cost || 0}
-                onChange={handleChange}
-                onBlur={handleUpdate}
-                className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Note-only fields */}
-        {isNote && (
-          <div>
-            <label className="block text-xs font-medium text-foreground-secondary mb-1">
-              Notes
-            </label>
-            <textarea
-              name="address"
-              rows="4"
-              value={localData.details?.address || ''}
-              onChange={handleDetailsChange}
-              onBlur={handleUpdate}
-              className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-        )}
-      </div>
+      {/* Comments Tab */}
+      {activeTab === 'comments' && (
+        <CommentList
+          tripId={trip._id}
+          nodeId={selectedNodeId}
+          socket={socket}
+        />
+      )}
     </div>
   );
 };
