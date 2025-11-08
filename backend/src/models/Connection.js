@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\backend\src\models\Connection.js
+//================================================================================
+
 import mongoose, { Schema } from 'mongoose';
 
 const connectionSchema = new Schema({
@@ -17,7 +21,6 @@ const connectionSchema = new Schema({
     ref: 'Node',
     required: true
   },
-  // ✅ --- ADDED ---
   sourceHandle: {
     type: String,
     default: null
@@ -26,12 +29,7 @@ const connectionSchema = new Schema({
     type: String,
     default: null
   },
-  // ✅ --- END ---
-  travelInfo: {
-    mode: { type: String },
-    timeText: { type: String }
-  }
-  // No timestamps needed as these are simple relationships
+  // ✅ --- 'travelInfo' field has been completely removed ---
 });
 
 const Connection = mongoose.model('Connection', connectionSchema);

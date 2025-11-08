@@ -31,21 +31,27 @@ export const getTripBudget = (tripId) => api.get(`/trips/${tripId}/budget`);
 export const addCollaborator = (tripId, collaboratorData) =>
   api.post(`/trips/${tripId}/collaborators`, collaboratorData);
 
-// ✅ --- ADDED SHARE/JOIN ENDPOINTS ---
 export const joinTripWithCode = (tripId, password) =>
   api.post('/trips/join', { tripId, password });
 
 export const setTripShareCode = (tripId, password) =>
   api.put(`/trips/${tripId}/share`, { password });
+
+// ✅ --- UPDATED: Geo Endpoints (Photon) ---
+export const searchPhotonPlaces = (query, bias_lat, bias_lon) => {
+  const params = { query };
+  if (bias_lat && bias_lon) {
+    params.bias_lat = bias_lat;
+    params.bias_lon = bias_lon;
+  }
+  return api.post('/geo/search', params);
+};
+
+export const reverseGeocode = (lat, lon) =>
+  api.get(`/geo/reverse?lat=${lat}&lon=${lon}`);
 // ✅ --- END ---
 
-// --- Google Maps Endpoints ---
-export const searchGooglePlaces = (query) => api.post('/google/search', { query });
-export const searchNearbyPlaces = (placeId, query, radius) =>
-  api.post('/google/nearby', { placeId, query, radius });
-export const getGoogleDirections = (originPlaceId, destinationPlaceId) =>
-  api.post('/google/directions', { originPlaceId, destinationPlaceId });
-
+// --- Task & Comment Endpoints ---
 export const getTasksForNode = (nodeId) => api.get(`/tasks/node/${nodeId}`);
 export const getCommentsForNode = (nodeId) => api.get(`/comments/node/${nodeId}`);
 

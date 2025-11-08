@@ -27,7 +27,7 @@ const formatEdge = (backendConnection) => {
     target: backendConnection.toNodeId,
     sourceHandle: backendConnection.sourceHandle,
     targetHandle: backendConnection.targetHandle,
-    travelInfo: backendConnection.travelInfo,
+    // travelInfo removed
   };
 };
 const selectNodes = (state) => state.nodes;

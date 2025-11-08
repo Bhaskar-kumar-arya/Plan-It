@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\backend\src\server.js
+//================================================================================
+
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -10,9 +14,9 @@ import connectDB from './config/db.js';
 // Routes
 import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
-import googleRoutes from './routes/google.js'; // 1. Import new routes
-import taskRoutes from './routes/taskRoutes.js'; // ✅ --- ADD THIS ---
-import commentRoutes from './routes/commentRoutes.js'; // ✅ --- ADD THIS ---
+import geoRoutes from './routes/geo.js'; // ✅ --- RENAMED FROM 'googleRoutes' ---
+import taskRoutes from './routes/taskRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
 
 // Middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
@@ -29,10 +33,10 @@ const server = http.createServer(app);
 
 // --- Socket.io Setup ---
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"],
-  },
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
 });
 
 // --- Core Middleware ---
@@ -43,9 +47,9 @@ app.use(express.urlencoded({ extended: false }));
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
-app.use('/api/google', googleRoutes); // 2. Add new routes to Express
-app.use('/api/tasks', taskRoutes); // ✅ --- ADD THIS ---
-app.use('/api/comments', commentRoutes); // ✅ --- ADD THIS ---
+app.use('/api/geo', geoRoutes); // ✅ --- UPDATED ---
+app.use('/api/tasks', taskRoutes);
+app.use('/api/comments', commentRoutes);
 
 // --- Handle Socket.io Connections ---
 socketHandler(io);
@@ -55,5 +59,5 @@ app.use(errorHandler);
 
 // --- Start Server ---
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

@@ -32,10 +32,20 @@ const nodeSchema = new Schema({
     x: { type: Number, required: true },
     y: { type: Number, required: true }
   },
+  // ✅ --- UPDATED DETAILS SCHEMA FOR PHOTON ---
   details: {
-    googlePlaceId: { type: String, trim: true },
-    address: { type: String, trim: true }
+    // [longitude, latitude]
+    coordinates: {
+      lat: { type: Number },
+      lng: { type: Number }
+    },
+    address: { type: String, trim: true }, // Formatted address
+    country: { type: String, trim: true },
+    city: { type: String, trim: true },
+    street: { type: String, trim: true },
+    osm_id: { type: Number }
   },
+  // ✅ --- END ---
   timing: {
     arrival: { type: Date },
     departure: { type: Date }
@@ -44,7 +54,6 @@ const nodeSchema = new Schema({
     type: Number,
     default: 0
   },
-  // ✅ --- 'status' field has been completely removed ---
 }, {
   timestamps: true
 });
