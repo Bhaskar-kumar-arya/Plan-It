@@ -25,7 +25,7 @@ const formatTime = (dateString) => {
 
 const CustomNode = ({ data, selected }) => {
   const name = data?.name || 'Loading...';
-  const address = data?.details?.address || 'Click to add details';
+  const address = data?.details?.address || 'Location';
   const node_id = data?._id || name; // Use id for a unique image
 
   // ✅ Get arrival and departure times

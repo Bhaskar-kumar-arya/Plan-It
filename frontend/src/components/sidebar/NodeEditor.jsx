@@ -19,28 +19,23 @@ const socketSelector = (state) => state.socket;
 const tripSelector = (state) => state.trip;
 const setSelectedNodeIdSelector = (state) => state.setSelectedNodeId;
 
-// ✅ --- Helper to format date for <input type="datetime-local"> ---
-// It needs the format YYYY-MM-DDTHH:mm
+// --- Helper to format date for <input type="datetime-local"> ---
 const formatDateTimeLocal = (dateString) => {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
-    // Adjust for timezone offset
     const correctedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    // Return in 'YYYY-MM-DDTHH:mm' format
     return correctedDate.toISOString().slice(0, 16);
   } catch (e) {
     console.error('Error formatting date:', e);
     return '';
   }
 };
-// ✅ --- END HELPER ---
 
 /**
  * This component shows the details for the currently selected node.
  */
 const NodeEditor = () => {
-  // --- SELECT EACH VALUE INDIVIDUALLY ---
   const selectedNodeId = useTripStore(selectedNodeIdSelector);
   const nodes = useTripStore(nodesSelector);
   const socket = useTripStore(socketSelector);
@@ -81,19 +76,16 @@ const NodeEditor = () => {
     setLocalData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ --- ADDED: Handler for timing inputs ---
   const handleTimingChange = (e) => {
     const { name, value } = e.target;
     setLocalData((prev) => ({
       ...prev,
       timing: {
         ...prev.timing,
-        // Convert local time string back to ISO string for DB
         [name]: value ? new Date(value).toISOString() : null,
       },
     }));
   };
-  // ✅ --- END HANDLER ---
 
   const handleUpdate = () => {
     if (JSON.stringify(localData) === JSON.stringify(nodeData)) return;
@@ -106,14 +98,12 @@ const NodeEditor = () => {
     });
   };
 
-  // Move Bin Item to Canvas
   const handleMoveToCanvas = () => {
     if (!socket || !trip) return;
 
     const updatedData = {
       ...localData,
       displayType: 'canvas',
-      status: 'confirmed',
       position: { x: 400, y: 400 },
     };
 
@@ -148,7 +138,7 @@ const NodeEditor = () => {
         </p>
       </div>
 
-      {/* Tabs (Mocked for now) */}
+      {/* Tabs */}
       <div className="flex border-b border-border">
         <button className="flex-1 flex justify-center items-center gap-2 py-2.5 text-sm font-medium text-accent border-b-2 border-accent">
           <Info className="h-4 w-4" />
@@ -166,7 +156,6 @@ const NodeEditor = () => {
 
       {/* Details Form */}
       <div className="p-4 space-y-4">
-        {/* Move to Canvas button */}
         {isBinItem && (
           <button
             onClick={handleMoveToCanvas}
@@ -208,7 +197,6 @@ const NodeEditor = () => {
               />
             </div>
 
-            {/* ✅ --- ADDED TIMING INPUTS --- */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-xs font-medium text-foreground-secondary mb-1">
@@ -222,7 +210,7 @@ const NodeEditor = () => {
                   onBlur={handleUpdate}
                   className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
                 />
-              </div>  
+              </div>
               <div>
                 <label className="block text-xs font-medium text-foreground-secondary mb-1">
                   Departure
@@ -236,25 +224,6 @@ const NodeEditor = () => {
                   className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
-            </div>
-            {/* ✅ --- END TIMING INPUTS --- */}
-
-            <div>
-              <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={localData.status || 'idea'}
-                onChange={handleChange}
-                onBlur={handleUpdate}
-                disabled={isBinItem}
-                className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-              >
-                <option value="idea">Idea</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="booked">Booked</option>
-              </select>
             </div>
 
             <div>
@@ -280,10 +249,10 @@ const NodeEditor = () => {
               Notes
             </label>
             <textarea
-              name="address" // This was 'notes' but the schema uses 'details.address' for note content
+              name="address"
               rows="4"
-              value={localData.details?.address || ''} // Changed from details.notes
-              onChange={handleDetailsChange} // Use details changer
+              value={localData.details?.address || ''}
+              onChange={handleDetailsChange}
               onBlur={handleUpdate}
               className="w-full px-3 py-1.5 bg-background border border-border rounded-md placeholder-foreground-secondary focus:outline-none focus:ring-1 focus:ring-accent"
             />

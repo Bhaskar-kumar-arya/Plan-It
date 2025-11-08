@@ -1,3 +1,7 @@
+//================================================================================
+//FILE: C:\Users\prith\Desktop\TripIt\backend\src\models\Node.js
+//================================================================================
+
 import mongoose, { Schema } from 'mongoose';
 
 const nodeSchema = new Schema({
@@ -18,7 +22,7 @@ const nodeSchema = new Schema({
     enum: ['location', 'note'], // Based on Core Features (Add Location, Add Note)
     default: 'location'
   },
-  // ✅ ADDED: This field controls if it's on the canvas or in the bin
+  // This field controls if it's on the canvas or in the bin
   displayType: {
     type: String,
     enum: ['canvas', 'bin'],
@@ -40,11 +44,7 @@ const nodeSchema = new Schema({
     type: Number,
     default: 0
   },
-  status: {
-    type: String,
-    enum: ['idea', 'confirmed', 'booked'], // Based on Core Features
-    default: 'idea'
-  }
+  // ✅ --- 'status' field has been completely removed ---
 }, {
   timestamps: true
 });
