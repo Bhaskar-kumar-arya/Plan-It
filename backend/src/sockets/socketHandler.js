@@ -208,6 +208,25 @@ export const socketHandler = (io) => {
         // You would check if socket.user._id matches the comment.userId
     });
 
+    socket.on('webrtcSignal', ({ to, signal }) => {
+      const { user, currentTripId } = socket;
+      if (!user || !currentTripId || !to) return;
+
+      // Find the target user's data in the liveUsers map
+      const room = liveUsers.get(currentTripId);
+      const targetUserData = room?.get(to);
+
+      if (targetUserData) {
+        // Emit the signal directly to all of the target user's sockets
+        targetUserData.sockets.forEach(socketId => {
+          io.to(socketId).emit('webrtcSignal', {
+            from: user._id, // Send *your* user ID as the 'from'
+            username: user.username, // Send your username for UI
+            signal,
+          });
+        });
+      }
+    });
 
     // --- Node Events ---
     socket.on('createNode', async (nodeData, callback) => {

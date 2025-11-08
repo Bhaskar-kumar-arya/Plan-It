@@ -31,10 +31,15 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  process.env.CLIENT_URL, // This is your deployed frontend
+  "http://localhost:5173"   // This is your local dev machine
+].filter(Boolean);
+
 // --- Socket.io Setup ---
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
