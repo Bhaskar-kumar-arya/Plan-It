@@ -228,7 +228,7 @@ const NodeEditor = () => {
 
             <div>
               <label className="block text-xs font-medium text-foreground-secondary mb-1">
-                Estimated Cost ($)
+                Estimated Cost (RS)
               </label>
               <input
                 type="number"

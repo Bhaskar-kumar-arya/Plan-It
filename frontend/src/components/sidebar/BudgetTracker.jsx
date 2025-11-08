@@ -23,7 +23,7 @@ const BudgetTracker = () => {
         Trip Budget
       </h3>
       <div className="text-3xl font-bold text-foreground">
-        ${totalBudget.toLocaleString()}
+        RS {totalBudget.toLocaleString()}
       </div>
       <div className="text-sm text-foreground-secondary">
         Total estimated cost
