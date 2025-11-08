@@ -225,16 +225,13 @@ const Canvas = () => {
       if (!connectingNodeId.current) return;
 
       const {
-        nodeId: sourceNodeId,
-        handleType: sourceHandleType,
-        handleId: sourceHandle,
-      } = connectingNodeId.current;
+        nodeId: startNodeId,
+        handleType: startHandleType,
+        handleId: startHandleId,
+      } = connectingNodeId.current;
 
       connectingNodeId.current = null;
 
-      if (sourceHandleType === 'target') {
-        return;
-      }
 
       if (event.target && event.target.classList.contains('react-flow__pane')) {
         const position = screenToFlowPosition({
@@ -242,12 +239,26 @@ const Canvas = () => {
           y: event.clientY,
         });
 
-        openAddLocationModal({
-          type: 'connect',
-          sourceNodeId,
-          sourceHandle,
-          position,
-        });
+        if (startHandleType === 'source') {
+          // Original behavior: source -> newNode
+          openAddLocationModal({
+            type: 'connect',
+            connectionType: 'sourceToTarget',
+            sourceNodeId: startNodeId,
+            sourceHandle: startHandleId,
+            position,
+          });
+        } else if (startHandleType === 'target') {
+          // New behavior: newNode -> target
+          openAddLocationModal({
+            type: 'connect',
+            connectionType: 'targetFromSource',
+            targetNodeId: startNodeId,
+            targetHandle: startHandleId,
+            position,
+          });
+        }
+      
       }
     },
     [screenToFlowPosition, openAddLocationModal]

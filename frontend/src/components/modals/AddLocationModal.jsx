@@ -74,14 +74,28 @@ const AddLocationModal = () => {
     socket.emit('createNode', newNodePayload, (createdNode) => {
       if (createdNode && !createdNode.error) {
         if (type === 'connect') {
-          const { sourceNodeId, sourceHandle } = modalPayload;
-          socket.emit('createConnection', {
-            tripId,
-            fromNodeId: sourceNodeId,
-            toNodeId: createdNode._id,
-            sourceHandle: sourceHandle,
-            targetHandle: null,
-          });
+          const { connectionType } = modalPayload;
+          if (connectionType === 'sourceToTarget') {
+            // Original behavior: source -> newNode
+            const { sourceNodeId, sourceHandle } = modalPayload;
+            socket.emit('createConnection', {
+              tripId,
+              fromNodeId: sourceNodeId,
+              toNodeId: createdNode._id,
+              sourceHandle: sourceHandle,
+              targetHandle: null,
+            });
+          } else if (connectionType === 'targetFromSource') {
+            // New behavior: newNode -> target
+            const { targetNodeId, targetHandle } = modalPayload;
+            socket.emit('createConnection', {
+              tripId,
+              fromNodeId: createdNode._id,
+              toNodeId: targetNodeId,
+              sourceHandle: null,
+              targetHandle: targetHandle,
+            });
+          }
         }
         if (displayType === 'canvas') {
           useTripStore.getState().setSelectedNodeId(createdNode._id);
